@@ -1,0 +1,6 @@
+{
+  "language": ["TypeScript", "Rust", "Python 3.11"],
+  "frameworks": ["Tauri 2", "React 19", "Vite 6", "Vitest 4"],
+  "test_command": "npm run check",
+  "layout": { "frontend": "src", "backend": "src-tauri/src", "analysis": "analysis", "test_setup": "src/test", "scripts": "scripts" }
+}

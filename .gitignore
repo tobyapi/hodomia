@@ -1,0 +1,11 @@
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
+*.local
+coverage/
+.runtime/
+projects/
+analysis/__pycache__/
+analysis/tests/__pycache__/
+test-results/
