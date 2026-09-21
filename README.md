@@ -11,6 +11,15 @@ Tauri 2 + React 19 のローカル音楽解析アプリ。MP3 / MP4 / M4A / WAV 
 
 初回セットアップ後の解析はローカルで実行します。自動推定には誤りや未確定の情報が含まれるため、試聴して確認・修正してください。
 
+## MCPとヘッドレスモード
+
+GUIに加えて、**MCPサーバーとヘッドレスCLI**を利用できます。AIクライアントやスクリプトから、保存曲の取得、非同期解析、区間検索・編集、音声クリップの切り出し、JSON/CSV/SRTの書き出しを操作できます。解析環境とプロジェクト形式はGUIと共通です。
+
+- **ヘッドレスCLI**：GUIを開かずに操作し、結果をJSONで受け取ります。例：`node scripts/headless.mjs list_projects`。
+- **MCP**：`node automation/mcp-server.mjs`で標準入出力のサーバーを起動します。クライアント用の接続設定は`node scripts/mcp-config.mjs`で生成できます。
+
+初回の解析環境セットアップは必要です。GUIで開始した解析もアプリ終了後に継続するため、中止にはキャンセル操作を使ってください。許可フォルダーの指定、接続設定、各操作の引数は[CLI・MCPによる自動操作](docs/automation.md)を参照してください。
+
 ## 開発環境の準備
 
 Node.js 22以上、Rust stable MSVC、Visual Studio C++ Build Tools / Windows SDK、WebView2、[uv](https://docs.astral.sh/uv/getting-started/installation/) が必要です。解析環境はPython3.11、CUDA12.8対応PyTorch。NVIDIA GPUがない場合はCPUを使用し、時間がかかります。8GB GPUでモデルを順次読み込む構成です。
