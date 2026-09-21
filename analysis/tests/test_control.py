@@ -6,6 +6,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 import wave
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from control import Control
@@ -24,6 +25,7 @@ class ControlTests(unittest.TestCase):
         validate_options({'mode': 'japanese', 'scope': 'vocal-events'}, 60)
 
     def setUp(self):
+        self.worker_jobs = []
         self.temp = tempfile.TemporaryDirectory()
         self.home = Path(self.temp.name)
         self.runtime = self.home / 'runtime'
@@ -36,13 +38,38 @@ class ControlTests(unittest.TestCase):
         self.root = Path(self.service.dispatch('import_audio', {'source': str(self.source)})['root'])
 
     def tearDown(self):
+        for job_id in self.worker_jobs:
+            self.wait_for_worker_exit(job_id)
         self.temp.cleanup()
+
+    def wait_for_worker_exit(self, job_id):
+        # A terminal job state is written before the worker closes its log.
+        deadline = time.monotonic() + 15
+        while time.monotonic() < deadline:
+            job = json.loads(self.service.jobs.path(job_id).read_text(encoding='utf-8'))
+            if job.get('pid'):
+                if process_identity(job['pid']) != job.get('processIdentity'):
+                    return
+            elif job['state'] == 'failed':
+                return
+            time.sleep(.05)
+        self.fail(f'Worker did not exit before cleanup: {job_id}')
 
     def test_summary_and_library_do_not_return_full_arrays(self):
         summary = self.service.dispatch('get_project', {'root': str(self.root)})
         self.assertNotIn('series', summary)
         self.assertEqual(summary['revision'], 0)
         self.assertEqual(self.service.dispatch('list_projects', {})['projects'][0]['root'], str(self.root))
+
+    def test_cleanup_waits_for_worker_exit_after_terminal_state(self):
+        job_id = 'c' * 32
+        write_json(self.service.jobs.path(job_id), dict(
+            state='failed', pid=123, processIdentity='worker'))
+        with patch('test_control.process_identity', side_effect=['worker', 'worker', None]) as identity:
+            with patch('test_control.time.sleep') as sleep:
+                self.wait_for_worker_exit(job_id)
+        self.assertEqual(identity.call_count, 3)
+        self.assertEqual(sleep.call_count, 2)
 
     def test_scope_rejects_unapproved_input(self):
         restricted = Control(self.runtime, self.projects, self.home / 'empty-registry')
@@ -91,6 +118,7 @@ class ControlTests(unittest.TestCase):
         manifest = snapshot(self.root)['project']
         (self.root / manifest['source']['path']).write_bytes(b'changed source')
         job = self.service.dispatch('start_analysis', {'root': str(self.root), 'options': {'mode': 'japanese', 'scope': 'harmony'}})
+        self.worker_jobs.append(job['jobId'])
         deadline = time.monotonic() + 15
         while time.monotonic() < deadline:
             state = self.service.dispatch('get_job', {'jobId': job['jobId']})
