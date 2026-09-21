@@ -3,12 +3,18 @@ import ReactDOM from "react-dom/client";
 import { App } from "../../src/App";
 import * as api from "../../src/api";
 import type { Snapshot } from "../../src/types";
+import { demo } from "./demo";
 import "../../src/styles.css";
 import "../../src/workspace.css";
 
-const response = await fetch("/test-results/ui-snapshot.json");
-if (!response.ok) throw new Error("Run npm run harness:prepare -- <project-folder> first");
-const value: Snapshot = await response.json();
+const isDemo = new URLSearchParams(location.search).has("demo");
+async function loadSnapshot(): Promise<Snapshot> {
+  if (isDemo) return structuredClone(demo);
+  const response = await fetch("/test-results/ui-snapshot.json");
+  if (!response.ok) throw new Error("Run npm run harness:prepare -- <project-folder> first");
+  return response.json();
+}
+const value = await loadSnapshot();
 let hidden = false;
 const bridge: typeof api = {
   ...api,
@@ -18,7 +24,7 @@ const bridge: typeof api = {
   savedProjects: async () => hidden ? [] : [{ root: value.root, name: value.project.name, duration: value.project.duration, createdAt: null, hasAnalysis: !!value.project.currentRun }],
   removeSavedProject: async () => { hidden = true; },
   deleteAnalysis: async () => { value.project.currentRun = null; value.result = {}; value.edits = { revision: value.edits.revision + 1, tracks: {} }; return structuredClone(value); },
-  asset: (_root, path) => "/test-results/ui-media/" + (path === "audio.wav" ? "original.wav" : path.split("/").pop()),
+  asset: (_root, path) => isDemo ? "" : "/test-results/ui-media/" + (path === "audio.wav" ? "original.wav" : path.split("/").pop()),
   runtimeStatus: async () => ({ path: "UI検証用。保存はメモリー内のみ。", ready: true, chordMiniReady: true }),
   jobStatus: async () => ({ running: false, kind: null, log: "ブラウザーUIハーネス。実際の分析はデスクトップで実行します。" }),
   choose: async () => value.root,
