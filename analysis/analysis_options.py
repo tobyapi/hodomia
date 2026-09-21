@@ -7,7 +7,7 @@ def validate_options(options, duration):
         raise ValueError('解析オプションが不正です。')
     if options.get('mode') not in ('multilingual', 'japanese', 'instrumental'):
         raise ValueError('解析モードが不正です。')
-    if options.get('scope') not in (None, 'vocal-events', 'harmony') or (options.get('scope') and options.get('region')):
+    if options.get('scope') not in (None, 'vocal-events', 'vocal-comparison', 'harmony') or (options.get('scope') and options.get('region')):
         raise ValueError('解析の対象が不正です。')
     if options.get('chordBackend', 'chordmini-btc') != 'chordmini-btc':
         raise ValueError('コード推定はBTCのみ対応しています。')

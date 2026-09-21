@@ -25,6 +25,7 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
     validate_options(options, project['duration'])
     region = options.get('region')
     events_only = options.get('scope') == 'vocal-events'
+    compare_events = options.get('scope') == 'vocal-comparison'
     harmony_only = options.get('scope') == 'harmony'
     sensitivity = options.get('eventSensitivity', 'standard')
     (root / 'cancel.flag').unlink(missing_ok=True)
@@ -42,9 +43,9 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
                 previous = read_json(previous_file)
         project['currentRun'] = run_id
         write_json(root / 'project.json', project)
-        result = copy.deepcopy(previous) if (region or events_only or harmony_only) and previous else {'tracks': {}, 'series': {}, 'stems': {}, 'engines': {}}
+        result = copy.deepcopy(previous) if (region or events_only or compare_events or harmony_only) and previous else {'tracks': {}, 'series': {}, 'stems': {}, 'engines': {}}
         result['runId'] = run_id
-        if not (events_only or harmony_only) or 'mode' not in result:
+        if not (events_only or compare_events or harmony_only) or 'mode' not in result:
             result['mode'] = options['mode']
         result['sourceHash'] = project['source']['sha256']
         if on_run is not None:
@@ -91,6 +92,25 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
         audio = within(root, project['audio'])
         duration = project['duration']
         paths = {}
+        if compare_events:
+            result.pop('vocalComparisons', None)
+            from vocal_comparison import compare
+            paths = {name: within(root, path) for name, path in result.get('stems', {}).items()}
+            def compare_voices():
+                last_update = 0.
+                def progress(fraction):
+                    nonlocal last_update
+                    if cancelled():
+                        raise Cancelled()
+                    now = time.monotonic()
+                    if now - last_update >= 1 or fraction >= 1:
+                        publish(f'AST / YAMNet を比較 {round(fraction * 100)}%', .05 + .9 * fraction)
+                        last_update = now
+                result['vocalComparisons'] = compare(audio, paths.get('vocals'), models, device, runtime,
+                                                    duration, folder, sensitivity, progress)
+            attempt('AST / YAMNet の比較', .05, compare_voices)
+            publish('声の比較に失敗しました' if errors else '声の比較完了', 1, 'partial' if errors else 'complete')
+            return
         def analyze_harmony_signal(signal, sr, source):
             from chordmini import infer
             def check_cancel():

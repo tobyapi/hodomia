@@ -193,7 +193,7 @@ test("playback volume survives stem changes and reopening the app", async () => 
   fireEvent.click(screen.getByRole("button", { name: "プロジェクトを開く" }));
   await screen.findByRole("heading", { name: "テスト曲" });
   const reopened = second.container.querySelector("audio")!;
-  expect(reopened.volume).toBe(.35);
+  await waitFor(() => expect(reopened.volume).toBe(.35));
   expect(reopened.muted).toBe(false);
   expect(reopened.volume).toBe(.35);
   fireEvent.change(screen.getByLabelText("再生音量"), { target: { value: "0" } });

@@ -2,15 +2,14 @@
 from pathlib import Path
 import numpy as np
 from storage import row, write_json
+from vocal_labels import CLASSES, CATEGORIES
 
 MODEL_REPO = 'MIT/ast-finetuned-audioset-10-10-0.4593'
 MODEL_REVISION = 'f826b80d28226b62986cc218e5cec390b1096902'
 EVENTS = {
     'rap': ('ラップ', ('Rapping',)),
     'spoken': ('朗読・語り', ('Narration, monologue',)),
-    'beatbox': ('ビートボックス', ('Beatboxing',)),
-    'breath': ('ブレス', ('Breathing', 'Gasp', 'Pant', 'Sigh')),
-    'humming': ('ハミング', ('Humming',)),
+    **{key: (label, CLASSES[key]) for key, label in CATEGORIES.items()},
     'other': ('その他の非言語発声', ('Groan', 'Grunt', 'Whimper', 'Laughter')),
 }
 THRESHOLDS = {'standard': .15, 'sensitive': .06}
@@ -87,7 +86,12 @@ def detect(audio, vocal, models, device, duration, folder, sensitivity='standard
     frames = [{'time': round(float(t), 4), 'events': {name: {'score': 0., 'source': 'original', 'class': ''}
                                                    for name in EVENTS}} for t in times]
     batch_size = 4 if device == 'cuda' else 1
+    source_frames = {}
     for source_index, (source, path) in enumerate(sources.items()):
+        source_frames[source] = [{'start': max(0., round(float(t) - WINDOW / 2, 4)),
+                                  'end': min(duration, round(float(t) + WINDOW / 2, 4)),
+                                  'scores': {category: 0. for category in CLASSES}, 'classScores': {name: 0. for names in CLASSES.values() for name in names}}
+                                 for t in times]
         samples, sr = librosa.load(str(path), sr=16000, mono=True)
         for offset in range(0, len(times), batch_size):
             indices = list(range(offset, min(offset + batch_size, len(times))))
@@ -107,6 +111,8 @@ def detect(audio, vocal, models, device, duration, folder, sensitivity='standard
                 for index, values, is_audible in zip(indices, scores, audible):
                     if not is_audible:
                         continue
+                    source_frames[source][index]['classScores'] = {name: float(values[labels[name]]) for names in CLASSES.values() for name in names}
+                    source_frames[source][index]['scores'] = {category: max(float(values[labels[name]]) for name in names) for category, names in CLASSES.items()}
                     for category, (_, names) in EVENTS.items():
                         name = max(names, key=lambda name: values[labels[name]])
                         score = float(values[labels[name]])
@@ -124,5 +130,5 @@ def detect(audio, vocal, models, device, duration, folder, sensitivity='standard
         rows.extend(percussion(vocal, duration, rows))
         rows.sort(key=lambda item: item['start'])
     engine['vocalPercussion'] = bool(beatbox_recall and vocal)
-    write_json(Path(folder) / 'vocal-events-evidence.json', {'engine': engine, 'frames': frames})
+    write_json(Path(folder) / 'vocal-events-evidence.json', {'engine': engine, 'frames': frames, 'sourceFrames': source_frames})
     return rows, engine

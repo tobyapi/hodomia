@@ -78,8 +78,10 @@ class Jobs:
         validate_options(options, project['duration'])
         if not (self.runtime / 'ready.json').is_file():
             raise ControlError('MODEL_NOT_READY', '解析環境をセットアップしてください。')
-        if options.get('scope') != 'vocal-events' and not options.get('region') and not (self.runtime / 'chordmini/installation.json').is_file():
+        if options.get('scope') not in ('vocal-events', 'vocal-comparison') and not options.get('region') and not (self.runtime / 'chordmini/installation.json').is_file():
             raise ControlError('MODEL_NOT_READY', 'BTCモデルをセットアップしてください。')
+        if options.get('scope') == 'vocal-comparison' and not (self.runtime / 'yamnet/installation.json').is_file():
+            raise ControlError('MODEL_NOT_READY', '比較用のYAMNetモデルをセットアップしてください。')
         with file_lock(self.home / 'coordinator.lock'):
             if self.latest()['running']:
                 raise BusyError()
