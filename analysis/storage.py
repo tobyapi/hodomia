@@ -1,43 +1,17 @@
 """Project storage and portable interchange. This module has no ML dependencies."""
-import csv
 import hashlib
-import io
-import json
 import math
-import os
 import shutil
-import statistics
-import time
 import uuid
 from locking import project_mutation, file_lock
 from control_errors import ConflictError
+from json_store import write_json, read_json
+from project_export import export, effective_tracks, effective_bpm, srt_time
 from datetime import datetime, timezone
 from pathlib import Path
 
-TRACKS = ('beats', 'sections', 'lyrics', 'words', 'vocalEvents', 'chords', 'key')
+from track_schema import TRACKS, validate_tracks
 FORMATS = ('.mp3', '.mp4', '.m4a', '.wav', '.flac')
-
-
-def write_json(path, value):
-    path = Path(path)
-    temporary = path.with_name(path.name + '.' + uuid.uuid4().hex + '.tmp')
-    try:
-        temporary.write_text(json.dumps(value, ensure_ascii=False, allow_nan=False, indent=2), encoding='utf-8')
-        # Windows readers briefly hold the destination without FILE_SHARE_DELETE.
-        for attempt in range(6):
-            try:
-                os.replace(temporary, path)
-                break
-            except PermissionError as error:
-                if getattr(error, 'winerror', None) not in (5, 32, 33) or attempt == 5:
-                    raise
-                time.sleep(.02 * (attempt + 1))
-    finally:
-        temporary.unlink(missing_ok=True)
-
-
-def read_json(path):
-    return json.loads(Path(path).read_text(encoding='utf-8-sig'))
 
 
 def within(root, relative):
@@ -107,30 +81,6 @@ def create(source, parent):
         raise
 
 
-def validate_tracks(tracks, duration):
-    if not isinstance(tracks, dict) or set(tracks) - set(TRACKS):
-        raise ValueError('編集トラックが不正です。')
-    for track, rows in tracks.items():
-        if not isinstance(rows, list) or len(rows) > 100000:
-            raise ValueError('編集データが不正です。')
-        ids = set()
-        for row in rows:
-            if not isinstance(row, dict) or not isinstance(row.get('id'), str) or row['id'] in ids:
-                raise ValueError('項目IDは一意である必要があります。')
-            ids.add(row['id'])
-            if track == 'vocalEvents' and row.get('category') not in ('beatbox', 'breath', 'humming', 'other', 'rap', 'spoken'):
-                raise ValueError('声の表現の分類が不正です。')
-            if not isinstance(row.get('label', ''), str) or len(row.get('label', '')) > 10000:
-                raise ValueError('項目のテキストが不正です。')
-            start, end = row.get('start'), row.get('end')
-            if start is None and end is None and track in ('lyrics', 'words'):
-                continue
-            if any(type(t) not in (float, int) or not math.isfinite(t) for t in (start, end)):
-                raise ValueError('時刻は有限の数値で指定してください。')
-            if not 0 <= start <= end <= duration or (track != 'beats' and start == end):
-                raise ValueError('時刻は曲の長さの範囲内で、終了を開始より後にしてください。')
-
-
 @project_mutation
 def save_edits(root, edits):
     return _save_edits(root, edits)
@@ -150,10 +100,6 @@ def _save_edits(root, edits, mutation=None):
     write_json(root / 'history' / f"edits-{current['revision']}.json", current)
     write_json(root / 'edits.json', current)
     return current
-
-
-def effective_tracks(value):
-    return {**value['result'].get('tracks', {}), **value['edits']['tracks']}
 
 
 def delete_analysis(root):
@@ -177,48 +123,6 @@ def _delete_analysis(root):
             shutil.rmtree(target)
     (root / 'cancel.flag').unlink(missing_ok=True)
     return snapshot(root)
-
-
-def effective_bpm(tracks):
-    times = sorted(r['start'] for r in tracks.get('beats', []) if r.get('start') is not None)
-    intervals = [b - a for a, b in zip(times, times[1:]) if b > a]
-    return 60 / statistics.median(intervals) if intervals else None
-
-
-def srt_time(seconds):
-    millis = round(seconds * 1000)
-    hours, millis = divmod(millis, 3600000)
-    minutes, millis = divmod(millis, 60000)
-    seconds, millis = divmod(millis, 1000)
-    return f'{hours:02d}:{minutes:02d}:{seconds:02d},{millis:03d}'
-
-
-def export(root):
-    with file_lock(Path(root) / '.analysis.lock'), file_lock(Path(root) / '.write.lock'):
-        return _export(root)
-
-
-def _export(root):
-    value = snapshot(root)
-    tracks = effective_tracks(value)
-    out = Path(root) / 'exports' / (datetime.now().strftime('%Y%m%d-%H%M%S') + '-' + uuid.uuid4().hex[:6])
-    out.mkdir(parents=True)
-    write_json(out / 'analysis.json', {**value, 'tracks': tracks, 'bpm': effective_bpm(tracks), 'notice': '自動推定には未確認の情報を含みます。'})
-    with (out / 'timeline.csv').open('w', encoding='utf-8-sig', newline='') as stream:
-        writer = csv.writer(stream)
-        writer.writerow(['track', 'start', 'end', 'label', 'reviewed', 'warning', 'category', 'model_score', 'evidence_sources'])
-        for track, rows in tracks.items():
-            for row in rows:
-                label = row.get('label', '')
-                # Prevent spreadsheet formula execution while preserving JSON verbatim.
-                if label.startswith(('=', '+', '-', '@')):
-                    label = "'" + label
-                writer.writerow([track, row.get('start'), row.get('end'), label, row.get('reviewed', False), row.get('warning', ''),
-                                 row.get('category', ''), row.get('score', ''), '|'.join(row.get('evidenceSources', []))])
-    rows = sorted((r for r in tracks.get('lyrics', []) if r.get('start') is not None and r.get('end') is not None), key=lambda r: r['start'])
-    text = '\n\n'.join(f"{i}\n{srt_time(r['start'])} --> {srt_time(r['end'])}\n{r['label']}" for i, r in enumerate(rows, 1))
-    (out / 'lyrics.srt').write_text(text + '\n', encoding='utf-8')
-    return {'path': str(out), 'untimedLyrics': sum(r.get('start') is None for r in tracks.get('lyrics', []))}
 
 
 def row(track, index, start, end, label, **extra):

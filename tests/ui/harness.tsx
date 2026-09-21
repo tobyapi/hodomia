@@ -4,6 +4,7 @@ import { App } from "../../src/App";
 import * as api from "../../src/api";
 import type { Snapshot } from "../../src/types";
 import "../../src/styles.css";
+import "../../src/workspace.css";
 
 const response = await fetch("/test-results/ui-snapshot.json");
 if (!response.ok) throw new Error("Run npm run harness:prepare -- <project-folder> first");

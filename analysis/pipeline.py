@@ -1,21 +1,14 @@
 """Checkpointed single-song analysis; errors remain explicit and retryable."""
 import hashlib
-import copy
-import os
 import socket
-import time
 import traceback
-import uuid
-import sys
-from locking import analysis_operation, file_lock
+from locking import analysis_operation
 from analysis_options import validate_options
-from datetime import datetime, timezone
 from pathlib import Path
-from storage import manifest, within, write_json, read_json, row
-
-
-class Cancelled(Exception):
-    pass
+from storage import manifest, within, row
+from checkpoints import Cancelled, Checkpoint, create_run
+from lyrics_stage import analyze_lyrics
+from vocal_stage import vocal_events as detect_vocals
 
 
 @analysis_operation
@@ -26,53 +19,11 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
     region = options.get('region')
     events_only = options.get('scope') == 'vocal-events'
     harmony_only = options.get('scope') == 'harmony'
-    sensitivity = options.get('eventSensitivity', 'standard')
     (root / 'cancel.flag').unlink(missing_ok=True)
-    def cancelled():
-        return (root / 'cancel.flag').exists() or (cancel_path is not None and Path(cancel_path).exists())
-    with file_lock(root / '.write.lock'):
-        run_id = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S') + '-' + uuid.uuid4().hex[:8]
-        folder = root / 'runs' / run_id
-        folder.mkdir(parents=True)
-        write_json(folder / 'request.json', options)
-        previous = None
-        if project.get('currentRun'):
-            previous_file = within(root, 'runs/' + project['currentRun'] + '/result.json')
-            if previous_file.exists():
-                previous = read_json(previous_file)
-        project['currentRun'] = run_id
-        write_json(root / 'project.json', project)
-        result = copy.deepcopy(previous) if (region or events_only or harmony_only) and previous else {'tracks': {}, 'series': {}, 'stems': {}, 'engines': {}}
-        result['runId'] = run_id
-        if not (events_only or harmony_only) or 'mode' not in result:
-            result['mode'] = options['mode']
-        result['sourceHash'] = project['source']['sha256']
-        if on_run is not None:
-            on_run(run_id)
-    started, errors = time.monotonic(), []
-    status = {'state': 'running', 'stage': '準備', 'progress': 0, 'errors': errors}
-
-    def publish(stage, progress, state='running'):
-        if cancelled():
-            raise Cancelled()
-        status.update(state=state, stage=stage, progress=progress, elapsed=time.monotonic() - started)
-        write_json(folder / 'result.json', result)
-        write_json(folder / 'status.json', status)
-        print(stage, flush=True, file=sys.stderr)
-
-    def attempt(stage, progress, action):
-        publish(stage, progress)
-        try:
-            action()
-        except Cancelled:
-            raise
-        except Exception as error:
-            errors.append({'stage': stage, 'message': str(error)})
-            traceback.print_exc()
-        finally:
-            from engines import release
-            release()
-        publish(stage, progress)
+    run_id, folder, previous, result = create_run(root, project, options, on_run)
+    checkpoint = Checkpoint(root, folder, result, cancel_path)
+    publish, attempt, cancelled = checkpoint.publish, checkpoint.attempt, checkpoint.cancelled
+    errors = checkpoint.errors
 
     try:
         publish('音源の同一性を確認', 0)
@@ -114,21 +65,8 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
             publish('コード・キーの再推定に失敗しました' if errors else 'コード・キーの再推定完了', 1, 'partial' if errors else 'complete')
             return
         def vocal_events(start_progress, end_progress):
-            from vocal_events import detect
-            last_update = 0.
-            def update_progress(fraction):
-                nonlocal last_update
-                if cancelled():
-                    raise Cancelled()
-                now = time.monotonic()
-                if now - last_update >= 1 or fraction >= 1:
-                    publish(f'声の表現を検出 {round(fraction * 100)}%',
-                            start_progress + fraction * (end_progress - start_progress))
-                    last_update = now
-            rows, engine = detect(audio, paths.get('vocals'), models, device, duration, folder, sensitivity,
-                                  progress=update_progress, beatbox_recall=options.get('beatboxRecall', True))
-            result['tracks']['vocalEvents'] = rows
-            result['engines']['vocalEvents'] = engine
+            detect_vocals(start_progress, end_progress, audio, paths, models, device,
+                          duration, folder, options, checkpoint, result)
         if events_only:
             paths = {name: within(root, path) for name, path in result.get('stems', {}).items()}
             attempt('声の表現を検出', .05, lambda: vocal_events(.05, .95))
@@ -186,24 +124,7 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
             paths = {name: within(root, path) for name, path in result.get('stems', {}).items()}
         if options['mode'] != 'instrumental':
             def lyrics():
-                from lyrics import transcribe
-                vocal = paths.get('vocals')
-                if vocal is None:
-                    raise ValueError('歌詞解析の前にボーカル分離を完了してください。')
-                tracks, engine = transcribe(vocal, models, device, options['mode'], options.get('lyrics', ''),
-                                            duration, folder, region)
-                if region:
-                    for track, rows in tracks.items():
-                        kept = [r for r in result['tracks'].get(track, []) if r.get('start') is None or r['end'] <= region['start'] or r['start'] >= region['end']]
-                        # IDs include run so old and new rows cannot collide.
-                        for r in rows:
-                            r['id'] = run_id + '-' + r['id']
-                            if r.get('parentId'):
-                                r['parentId'] = run_id + '-' + r['parentId']
-                        result['tracks'][track] = kept + rows
-                else:
-                    result['tracks'].update(tracks)
-                result['engines']['lyrics'] = engine
+                analyze_lyrics(paths, models, device, options, duration, folder, region, run_id, result)
             attempt('日本語歌唱の精密解析' if options['mode'] == 'japanese' else '歌詞・単語の時刻', .72, lyrics)
         elif not region:
             result['tracks'].update(lyrics=[], words=[])
@@ -215,13 +136,8 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
         state = 'partial' if errors else 'complete'
         publish('一部の解析に失敗しました' if errors else '解析完了', 1, state)
     except Cancelled:
-        status.update(state='cancelled', stage='中止しました', elapsed=time.monotonic() - started)
-        write_json(folder / 'result.json', result)
-        write_json(folder / 'status.json', status)
+        checkpoint.finish_error()
     except Exception as error:
-        errors.append({'stage': status['stage'], 'message': str(error)})
-        status.update(state='failed', stage='解析に失敗しました', elapsed=time.monotonic() - started)
-        write_json(folder / 'result.json', result)
-        write_json(folder / 'status.json', status)
+        checkpoint.finish_error(error)
         traceback.print_exc()
         raise

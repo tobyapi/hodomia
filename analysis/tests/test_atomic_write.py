@@ -21,7 +21,7 @@ class AtomicWriteTests(unittest.TestCase):
                 if operation.call_count == 1:
                     raise error
                 replace(source, target)
-            with patch('storage.os.replace', side_effect=sharing_violation) as operation, patch('storage.time.sleep'):
+            with patch('json_store.os.replace', side_effect=sharing_violation) as operation, patch('json_store.time.sleep'):
                 write_json(path, {'progress': 1})
             self.assertEqual(read_json(path), {'progress': 1})
             self.assertEqual(list(Path(temp).glob('*.tmp')), [])
@@ -32,7 +32,7 @@ class AtomicWriteTests(unittest.TestCase):
             write_json(path, {'progress': 0})
             error = PermissionError('denied')
             error.winerror = 5
-            with patch('storage.os.replace', side_effect=error) as operation, patch('storage.time.sleep'), self.assertRaises(PermissionError):
+            with patch('json_store.os.replace', side_effect=error) as operation, patch('json_store.time.sleep'), self.assertRaises(PermissionError):
                 write_json(path, {'progress': 1})
             self.assertEqual(operation.call_count, 6)
             self.assertEqual(read_json(path), {'progress': 0})
