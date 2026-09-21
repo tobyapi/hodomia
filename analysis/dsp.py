@@ -26,51 +26,24 @@ def basics(path):
                     'peak': peak, 'silence': bool(peak < 1e-5)}, onset
 
 
-def harmony(y, sr, duration, beats):
+def accompaniment(paths, original, sr):
+    if not all(name in paths for name in ('bass', 'other')):
+        return original, 'original (separation unavailable)'
+    import librosa
+    signal = np.zeros_like(original)
+    for name in ('bass', 'other'):
+        stem, _ = librosa.load(str(paths[name]), sr=sr, mono=True)
+        count = min(len(signal), len(stem))
+        signal[:count] += stem[:count]
+    return signal, 'bass + other (vocals and drums excluded)'
+
+
+def estimate_key(y, sr, duration):
     import librosa
     from scipy.ndimage import median_filter
     harmonic = librosa.effects.harmonic(y, margin=3)
     chroma = librosa.feature.chroma_cqt(y=harmonic, sr=sr, hop_length=1024)
     chroma = median_filter(chroma, size=(1, 9))
-    templates, labels = [], []
-    for root in range(12):
-        for suffix, intervals in [('', [0, 4, 7]), ('m', [0, 3, 7])]:
-            template = np.full(12, -.25)
-            template[[(root + i) % 12 for i in intervals]] = 1
-            templates.append(template / np.linalg.norm(template))
-            labels.append(NOTES[root] + suffix)
-    boundaries = sorted(set([0.0] + [float(t) for t in beats if 0 < t < duration] + [duration]))
-    if len(boundaries) < 3:
-        boundaries = list(np.arange(0, duration, 1.0)) + [duration]
-    observations = []
-    for a, b in zip(boundaries[:-1], boundaries[1:]):
-        left, right = int(a * sr / 1024), max(int(b * sr / 1024), int(a * sr / 1024) + 1)
-        frame = chroma[:, left:right].mean(axis=1)
-        norm = np.linalg.norm(frame)
-        scores = np.array(templates) @ (frame / max(norm, 1e-8))
-        observations.append((a, b, scores, norm))
-    # Penalize brief chord flips; keep genuine changes possible at each beat.
-    scores = np.array([item[2] for item in observations])
-    costs = scores[0].copy()
-    back = []
-    transition = np.full((len(labels), len(labels)), -.22)
-    np.fill_diagonal(transition, 0)
-    for frame in scores[1:]:
-        candidates = costs[:, None] + transition
-        parents = np.argmax(candidates, axis=0)
-        back.append(parents)
-        costs = candidates[parents, np.arange(len(labels))] + frame
-    states = [int(np.argmax(costs))]
-    for parents in reversed(back):
-        states.append(int(parents[states[-1]]))
-    states.reverse()
-    chords = []
-    for (a, b, _, norm), state in zip(observations, states):
-        label = labels[state] if norm > .01 else 'N'
-        if chords and chords[-1]['label'] == label:
-            chords[-1]['end'] = b
-        else:
-            chords.append(row('chord', len(chords), a, b, label, warning='CQT・長短三和音の推定。7th等の拡張音は手動確認。'))
     average = chroma.mean(axis=1)
     major = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
     minor = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17])
@@ -78,7 +51,7 @@ def harmony(y, sr, duration, beats):
                   for root in range(12) for suffix, profile in [(' major', major), (' minor', minor)]]
     candidates = [(score, label) for score, label in candidates if np.isfinite(score)]
     key = max(candidates)[1] if candidates and np.std(average) > .01 else '未確定'
-    return {'chords': chords, 'key': [row('key', 0, 0, duration, key, warning='曲全体の調性候補・転調は手動で区間を追加')]}
+    return [row('key', 0, 0, duration, key, warning='曲全体の調性候補・転調は手動で区間を追加')]
 
 
 

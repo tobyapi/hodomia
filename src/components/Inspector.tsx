@@ -29,6 +29,7 @@ export function Inspector({ track, row, duration, onSave, onDelete, onLoop, onRe
     <label>終了（秒）<input type="number" step=".01" disabled={track === "beats"} value={end} onChange={e => setEnd(e.target.value)} /></label></div>
     <label className="check-label"><input type="checkbox" checked={reviewed} onChange={e => setReviewed(e.target.checked)} />試聴して確認済み</label>
     {row.warning && <p className="muted">{row.warning}</p>}
+    {track === "chords" && row.uncertain && <p className="muted">このコードは確度の低い候補です。和音名を確認・修正してください。</p>}
     {track === "vocalEvents" && row.score !== undefined && <div className="event-evidence"><p>元の推定：{VOCAL_CATEGORIES[row.detectedCategory ?? row.category ?? "other"]}</p><p>モデルスコア {row.score.toFixed(3)}（正解率ではありません）</p><p>参照音声：{row.evidenceSources?.map(s => s === "original" ? "原曲" : STEM_NAMES[s] ?? s).join("・")}</p><p className="muted">「あー」「うー」やスキャットを含め、歌唱との区別が難しい声は手動で分類できます。</p></div>}
     {error && <p role="alert" className="error">{error}</p>}
     <button className="primary" onClick={save}>変更を適用</button>

@@ -205,6 +205,13 @@ pub async fn choose_path<R: tauri::Runtime>(
                     return Err("project.json があるフォルダーを選んでください。".into());
                 }
                 grant(&app, &state, &path)?;
+                crate::library::restore(
+                    &app.path()
+                        .app_data_dir()
+                        .map_err(|e| e.to_string())?
+                        .join("library"),
+                    &path,
+                )?;
             } else {
                 state
                     .approved
@@ -230,6 +237,14 @@ pub async fn workspace_operation<R: tauri::Runtime>(
     tauri::async_runtime::spawn_blocking(move || {
         let state = app.state::<Workspace>();
         let _guard = state.operation.lock().map_err(|e| e.to_string())?;
+        let mut deletion_job = if operation == "delete_analysis" {
+            Some(state.job.lock().map_err(|e| e.to_string())?)
+        } else {
+            None
+        };
+        if let Some(job) = deletion_job.as_mut() {
+            assert_idle(job)?;
+        }
         match operation.as_str() {
             "create" => {
                 approved(&state, args["source"].as_str().ok_or("source missing")?)?;
@@ -242,7 +257,7 @@ pub async fn workspace_operation<R: tauri::Runtime>(
                 fs::create_dir_all(&parent).map_err(|e| e.to_string())?;
                 args["parent"] = json!(parent);
             }
-            "snapshot" | "save" | "export" => {
+            "snapshot" | "save" | "export" | "delete_analysis" => {
                 approved(&state, args["root"].as_str().ok_or("root missing")?)?;
             }
             _ => return Err("操作が不正です。".into()),
@@ -255,7 +270,69 @@ pub async fn workspace_operation<R: tauri::Runtime>(
                 Path::new(result["root"].as_str().ok_or("root missing")?),
             )?;
         }
+        if operation == "create" || operation == "snapshot" {
+            let root = Path::new(result["root"].as_str().ok_or("root missing")?);
+            crate::library::remember(
+                &app.path()
+                    .app_data_dir()
+                    .map_err(|e| e.to_string())?
+                    .join("library"),
+                root,
+            )?;
+        }
         Ok(result)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn saved_projects<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+) -> Result<Vec<Value>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let state = app.state::<Workspace>();
+        let _guard = state.operation.lock().map_err(|e| e.to_string())?;
+        let parent = app
+            .path()
+            .document_dir()
+            .map_err(|e| e.to_string())?
+            .join("Music Sweeper/Projects");
+        let registry = app
+            .path()
+            .app_data_dir()
+            .map_err(|e| e.to_string())?
+            .join("library");
+        let projects = crate::library::list(&parent, &registry)?;
+        for project in &projects {
+            grant(
+                &app,
+                &state,
+                Path::new(project["root"].as_str().ok_or("root missing")?),
+            )?;
+        }
+        Ok(projects)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn remove_saved_project<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    root: String,
+) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let state = app.state::<Workspace>();
+        let _guard = state.operation.lock().map_err(|e| e.to_string())?;
+        let root = approved(&state, &root)?;
+        crate::library::hide(
+            &app.path()
+                .app_data_dir()
+                .map_err(|e| e.to_string())?
+                .join("library"),
+            &root,
+        )
     })
     .await
     .map_err(|e| e.to_string())?
@@ -326,13 +403,18 @@ pub fn runtime_status<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<Val
             .join("models/vocal-events/model.safetensors")
             .is_file()
         && runtime.join("venv/Scripts/python.exe").is_file();
-    Ok(json!({"path": runtime, "ready": complete, "details": ready}))
+    let chord_mini_ready = runtime.join("chordmini/installation.json").is_file()
+        && runtime.join("chordmini/venv/Scripts/python.exe").is_file();
+    Ok(
+        json!({"path": runtime, "ready": complete, "details": ready, "chordMiniReady": chord_mini_ready}),
+    )
 }
 
 #[tauri::command]
 pub fn setup_runtime<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     state: State<Workspace>,
+    chord_mini: Option<bool>,
 ) -> Result<(), String> {
     let mut job = state.job.lock().map_err(|e| e.to_string())?;
     assert_idle(&mut job)?;
@@ -340,10 +422,15 @@ pub fn setup_runtime<R: tauri::Runtime>(
     fs::create_dir_all(&runtime).map_err(|e| e.to_string())?;
     let log_path = runtime.join("setup.log");
     let log = fs::File::create(&log_path).map_err(|e| e.to_string())?;
+    let script = if chord_mini.unwrap_or(false) {
+        "scripts/setup-chordmini.ps1"
+    } else {
+        "scripts/setup-analysis.ps1"
+    };
     let child = hidden(
         Command::new("powershell")
             .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
-            .arg(source_root(&app)?.join("scripts/setup-analysis.ps1"))
+            .arg(source_root(&app)?.join(script))
             .arg("-RuntimeRoot")
             .arg(&runtime),
     )

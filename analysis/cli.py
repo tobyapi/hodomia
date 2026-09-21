@@ -18,6 +18,8 @@ def execute(request, runtime):
         return storage.save_edits(args['root'], args['edits'])
     if operation == 'export':
         return storage.export(args['root'])
+    if operation == 'delete_analysis':
+        return storage.delete_analysis(args['root'])
     if operation == 'analyze':
         from pipeline import run
         run(args['root'], runtime, args['options'])

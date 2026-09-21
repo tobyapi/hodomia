@@ -22,9 +22,12 @@ def run(root, runtime, options):
         raise ValueError('解析モードが不正です。')
     region = options.get('region')
     events_only = options.get('scope') == 'vocal-events'
-    if options.get('scope') not in (None, 'vocal-events') or (events_only and region):
+    harmony_only = options.get('scope') == 'harmony'
+    if options.get('scope') not in (None, 'vocal-events', 'harmony') or (options.get('scope') and region):
         raise ValueError('解析の対象が不正です。')
     sensitivity = options.get('eventSensitivity', 'standard')
+    if options.get('chordBackend', 'chordmini-btc') != 'chordmini-btc':
+        raise ValueError('コード推定はBTCのみ対応しています。')
     if sensitivity not in ('standard', 'sensitive'):
         raise ValueError('声の表現の検出感度が不正です。')
     if region and (region.get('language') not in ('ja', 'en') or
@@ -43,9 +46,9 @@ def run(root, runtime, options):
             previous = read_json(previous_file)
     project['currentRun'] = run_id
     write_json(root / 'project.json', project)
-    result = copy.deepcopy(previous) if (region or events_only) and previous else {'tracks': {}, 'series': {}, 'stems': {}, 'engines': {}}
+    result = copy.deepcopy(previous) if (region or events_only or harmony_only) and previous else {'tracks': {}, 'series': {}, 'stems': {}, 'engines': {}}
     result['runId'] = run_id
-    if not events_only or 'mode' not in result:
+    if not (events_only or harmony_only) or 'mode' not in result:
         result['mode'] = options['mode']
     result['sourceHash'] = project['source']['sha256']
     started, errors = time.monotonic(), []
@@ -79,7 +82,7 @@ def run(root, runtime, options):
             if hashlib.file_digest(stream, 'sha256').hexdigest() != project['source']['sha256']:
                 raise ValueError('保存済みの元音源が変更されています。新しいプロジェクトとして読み込んでください。')
         from engines import configure, separate, beats, sections
-        from dsp import basics, harmony, pitch, stem_activity
+        from dsp import basics, estimate_key, pitch, stem_activity
         import numpy as np
         models, device = configure(runtime)
         # After setup every network attempt is a bug, including model-cache fallback.
@@ -90,6 +93,28 @@ def run(root, runtime, options):
         audio = within(root, project['audio'])
         duration = project['duration']
         paths = {}
+        def analyze_harmony_signal(signal, sr, source):
+            from chordmini import infer
+            def check_cancel():
+                if (root / 'cancel.flag').exists():
+                    raise Cancelled()
+            chords, engine = infer(audio, runtime, folder, duration, check_cancel)
+            key = estimate_key(signal, sr, duration)
+            result['tracks'].update(chords=chords, key=key)
+            result.pop('chordComparisons', None)
+            result['engines']['chords'] = engine
+            result['engines']['harmonySource'] = engine['source']
+            result['engines']['keySource'] = source
+        if harmony_only:
+            def refresh_harmony():
+                from dsp import accompaniment
+                paths = {name: within(root, path) for name, path in result.get('stems', {}).items()}
+                y, sr, _, _ = basics(audio)
+                signal, source = accompaniment(paths, y, sr)
+                analyze_harmony_signal(signal, sr, source)
+            attempt('コード・キーを再推定', .1, refresh_harmony)
+            publish('コード・キーの再推定に失敗しました' if errors else 'コード・キーの再推定完了', 1, 'partial' if errors else 'complete')
+            return
         def vocal_events(start_progress, end_progress):
             from vocal_events import detect
             last_update = 0.
@@ -103,7 +128,7 @@ def run(root, runtime, options):
                             start_progress + fraction * (end_progress - start_progress))
                     last_update = now
             rows, engine = detect(audio, paths.get('vocals'), models, device, duration, folder, sensitivity,
-                                  progress=update_progress)
+                                  progress=update_progress, beatbox_recall=options.get('beatboxRecall', True))
             result['tracks']['vocalEvents'] = rows
             result['engines']['vocalEvents'] = engine
         if events_only:
@@ -115,7 +140,7 @@ def run(root, runtime, options):
             publish('波形・音量', .05)
             y, sr, basic, onset = basics(audio)
             result['series'].update(basic)
-            result['engines']['signal'] = 'librosa 0.11 / chroma-template harmony / pYIN'
+            result['engines']['signal'] = 'librosa 0.11 / chroma key / pYIN'
             if basic['silence']:
                 result['tracks'] = {name: [] for name in ('beats', 'sections', 'lyrics', 'words', 'vocalEvents', 'chords', 'key')}
                 publish('無音のため音楽情報を推定できませんでした', 1, 'complete')
@@ -148,7 +173,11 @@ def run(root, runtime, options):
                 result['series']['tempo'] = [{'time': t, 'value': float(60 / dt)} for t, dt in zip(times, intervals) if dt > 0]
                 result['engines']['beats'] = 'Beat This final0'
             attempt('拍・BPM', .42, rhythm)
-            attempt('コード・キー', .5, lambda: result['tracks'].update(harmony(y, sr, duration, times)))
+            def analyze_harmony():
+                from dsp import accompaniment
+                signal, source = accompaniment(paths, y, sr)
+                analyze_harmony_signal(signal, sr, source)
+            attempt('コード・キー', .5, analyze_harmony)
             def analyze_structure():
                 if not paths:
                     raise ValueError('構造解析の前に分離を完了してください。')

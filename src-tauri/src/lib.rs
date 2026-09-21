@@ -26,7 +26,9 @@ fn app_builder<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<
             workspace::cancel_job,
             workspace::runtime_status,
             workspace::setup_runtime,
-            workspace::read_lyrics
+            workspace::read_lyrics,
+            workspace::saved_projects,
+            workspace::remove_saved_project
         ])
 }
 
@@ -67,4 +69,5 @@ mod tests {
         assert_eq!(value["runtime"], "Tauri");
     }
 }
+mod library;
 mod workspace;

@@ -1,10 +1,11 @@
 export type Mode = "multilingual" | "japanese" | "instrumental";
+export type SavedProject = { root: string; name: string; duration: number; createdAt: string | null; hasAnalysis: boolean };
 export type Track = "beats" | "sections" | "lyrics" | "words" | "vocalEvents" | "chords" | "key";
 export type VocalCategory = "beatbox" | "breath" | "humming" | "other" | "rap" | "spoken";
 export type TimelineRow = {
   id: string; start: number | null; end: number | null; label: string;
-  reviewed?: boolean; warning?: string; language?: string; parentId?: string;
-  category?: VocalCategory; detectedCategory?: VocalCategory; score?: number;
+  reviewed?: boolean; warning?: string; language?: string; parentId?: string; uncertain?: boolean;
+  category?: VocalCategory; detectedCategory?: VocalCategory; score?: number; method?: string;
   evidenceSources?: string[]; evidenceLabels?: string[]; timingUncertainty?: number;
 };
 export type Tracks = Partial<Record<Track, TimelineRow[]>>;
@@ -26,8 +27,8 @@ export type Snapshot = {
   status: { state: string; stage: string; progress?: number; elapsed?: number; errors: { stage: string; message: string }[] };
 };
 export type Job = { running: boolean; success?: boolean | null; kind: string | null; log: string };
-export type RuntimeStatus = { path: string; ready: boolean; details?: { cudaAvailable: boolean; torch: string } };
-export type AnalysisOptions = { mode: Mode; lyrics: string; scope?: "vocal-events"; eventSensitivity?: "standard" | "sensitive"; region?: { start: number; end: number; language: "ja" | "en" } };
+export type RuntimeStatus = { path: string; ready: boolean; chordMiniReady?: boolean; details?: { cudaAvailable: boolean; torch: string } };
+export type AnalysisOptions = { mode: Mode; lyrics: string; scope?: "vocal-events" | "harmony"; beatboxRecall?: boolean; eventSensitivity?: "standard" | "sensitive"; region?: { start: number; end: number; language: "ja" | "en" } };
 export const TRACK_NAMES: Record<Track, string> = { beats: "拍・小節", sections: "曲構成", lyrics: "歌詞", words: "単語", vocalEvents: "声の表現", chords: "コード", key: "キー" };
 export const VOCAL_CATEGORIES: Record<VocalCategory, string> = { rap: "ラップ", spoken: "朗読・語り", beatbox: "ビートボックス", breath: "ブレス", humming: "ハミング", other: "その他の非言語発声" };
 export const STEM_NAMES: Record<string, string> = { vocals: "ボーカル", drums: "ドラム", bass: "ベース", other: "その他" };

@@ -45,9 +45,9 @@ export function Timeline({ duration, time, zoom, tracks, analysis, visible, sele
         return groups.map(([name, rows], group) => lane(name, rows.filter(r => r.start !== null && r.end !== null).map(r => {
         const x = r.start! / duration * width, w = Math.max(track === "beats" ? 2 : 5, (r.end! - r.start!) / duration * width);
         return <g key={r.id} className={"region " + track + (selected === r.id ? " selected" : "")} onClick={e => { e.stopPropagation(); onSelect(track, r); onSeek(r.start!); }} role="button" tabIndex={0} aria-label={r.label + " " + timeLabel(r.start!)} onKeyDown={e => { if (e.key === "Enter") { onSelect(track, r); onSeek(r.start!); } }}>
-          <title>{r.label} · {r.warning ?? ""}</title>
+          <title>{r.label}{r.uncertain ? "（候補）" : ""} · {r.warning ?? ""}</title>
           <rect x={x} y={track === "beats" ? (r.label === "1" ? 8 : 27) : 15} width={w} height={track === "beats" ? (r.label === "1" ? 58 : 39) : 45} rx={track === "beats" ? 0 : 4} />
-          {track !== "beats" && w > 22 && <text x={x + 7} y={43}>{r.label.slice(0, Math.max(1, Math.floor(w / 12) - 1))}</text>}
+          {track !== "beats" && w > 22 && <text x={x + 7} y={43}>{(r.label + (r.uncertain ? " ?" : "")).slice(0, Math.max(1, Math.floor(w / 12) - 1))}</text>}
         </g>;
       }), track + group)); })}
       {visible.energy && lane("盛り上がり", <Curve points={analysis.series?.energy ?? []} duration={duration} width={width} color="#f9c977" />, "energy")}

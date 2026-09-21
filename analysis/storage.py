@@ -138,6 +138,24 @@ def effective_tracks(value):
     return {**value['result'].get('tracks', {}), **value['edits']['tracks']}
 
 
+def delete_analysis(root):
+    root = Path(root).resolve()
+    project = manifest(root)
+    protected = [within(root, project['source']['path']), within(root, project['audio'])]
+    targets = [within(root, name) for name in ('runs', 'history', 'exports')]
+    if any(file.is_relative_to(target) for target in targets for file in protected):
+        raise ValueError('音源が解析フォルダー内にあるため削除できません。')
+    revision = read_json(root / 'edits.json')['revision']
+    project['currentRun'] = None
+    write_json(root / 'project.json', project)
+    write_json(root / 'edits.json', {'revision': revision + 1, 'tracks': {}})
+    for target in targets:
+        if target.exists():
+            shutil.rmtree(target)
+    (root / 'cancel.flag').unlink(missing_ok=True)
+    return snapshot(root)
+
+
 def effective_bpm(tracks):
     times = sorted(r['start'] for r in tracks.get('beats', []) if r.get('start') is not None)
     intervals = [b - a for a, b in zip(times, times[1:]) if b > a]

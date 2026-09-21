@@ -63,7 +63,7 @@ def candidates(frames, duration, sensitivity='standard'):
     return rows
 
 
-def detect(audio, vocal, models, device, duration, folder, sensitivity='standard', progress=None):
+def detect(audio, vocal, models, device, duration, folder, sensitivity='standard', progress=None, beatbox_recall=True):
     import librosa
     import torch
     from transformers import ASTFeatureExtractor, ASTForAudioClassification
@@ -118,5 +118,11 @@ def detect(audio, vocal, models, device, duration, folder, sensitivity='standard
               'sensitivity': sensitivity, 'threshold': THRESHOLDS[sensitivity], 'sources': list(sources),
               'categories': list(EVENTS),
               'notice': '短い窓での分類候補。ラップと語りは重複する場合があります。朗読・語りはNarration, monologueに基づく候補で、詩の内容の判定ではありません。歌詞を削除しません。'}
+    rows = candidates(frames, duration, sensitivity)
+    if beatbox_recall:
+        from vocal_percussion import detect as percussion
+        rows.extend(percussion(vocal, duration, rows))
+        rows.sort(key=lambda item: item['start'])
+    engine['vocalPercussion'] = bool(beatbox_recall and vocal)
     write_json(Path(folder) / 'vocal-events-evidence.json', {'engine': engine, 'frames': frames})
-    return candidates(frames, duration, sensitivity), engine
+    return rows, engine

@@ -3,17 +3,21 @@ import * as nativeApi from "./api";
 import { beatGrid, effectiveBpm, replaceRow, timeLabel } from "./editing";
 import { useCloseSave } from "./useCloseSave";
 import { useEdits } from "./useEdits";
-import type { AnalysisOptions, Job, Mode, RuntimeStatus, Snapshot, TimelineRow, Track } from "./types";
-import { STEM_NAMES, TRACK_NAMES } from "./types";
+import type { AnalysisOptions, Job, Mode, RuntimeStatus, Snapshot, TimelineRow, Track, SavedProject } from "./types";
+import { TRACK_NAMES } from "./types";
 import { Timeline } from "./components/Timeline";
 import { Inspector } from "./components/Inspector";
-import { VolumeControl } from "./components/VolumeControl";
+import { Player } from "./components/Player";
+import { ChordControls } from "./components/ChordControls";
 
 const INITIAL_VISIBLE: Record<string, boolean> = { beats: true, sections: true, lyrics: true, words: false, vocalEvents: true, chords: true, key: false, energy: true, pitch: true, stems: false };
 
 export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) {
   const api = bridge;
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+  const [beatboxRecall, setBeatboxRecall] = useState(true);
+  const [savedProjects, setSavedProjects] = useState<SavedProject[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<SavedProject | null>(null);
   const [runtime, setRuntime] = useState<RuntimeStatus | null>(null);
   const [job, setJob] = useState<Job>({ running: false, kind: null, log: "" });
   const [busy, setBusy] = useState(false);
@@ -47,8 +51,9 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
   const displayedBpm = effectiveBpm(tracks.beats ?? []);
   const selected = rows.find(r => r.id === selectedId);
   const missingVocalCategories = editor.tracks.vocalEvents
-    ? (base.vocalEvents ?? []).filter(row => (row.category === "rap" || row.category === "spoken")
-      && !editor.tracks.vocalEvents!.some(saved => saved.category === row.category)) : [];
+    ? (base.vocalEvents ?? []).filter(row => row.method === "vocal-percussion"
+      ? !editor.tracks.vocalEvents!.some(saved => saved.category === "beatbox" && saved.start! <= row.start! && saved.end! >= row.end!)
+      : (row.category === "rap" || row.category === "spoken") && !editor.tracks.vocalEvents!.some(saved => saved.category === row.category)) : [];
   const locked = busy || job.running;
   const source = snapshot ? (stem === "original" ? snapshot.project.audio : snapshot.result.stems?.[stem]) : null;
   const guarded = useCallback(async (action: () => Promise<void>) => {
@@ -59,6 +64,7 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
   useEffect(() => {
     if (!api.desktop()) return;
     api.runtimeStatus().then(setRuntime).catch(e => setError(String(e)));
+    api.savedProjects().then(setSavedProjects).catch(e => setError("保存した曲を取得できません: " + String(e)));
   }, []);
   useEffect(() => {
     if (!api.desktop()) return;
@@ -100,6 +106,7 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
     audio.current?.pause(); setSnapshot(value); editor.reset(value.edits.tracks);
     setTime(0); currentTime.current = 0; setPlaying(false); setStem("original"); setLoop(null); setSelectedId(undefined);
     setViewAuto(false); setLyrics(""); setMessage("プロジェクトを開きました。");
+    void api.savedProjects().then(setSavedProjects).catch(e => setError("保存した曲の一覧を更新できません: " + String(e)));
   }
   async function save() {
     if (!snapshot) return;
@@ -117,14 +124,14 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
       const root = await api.choose("project"); if (root) install(await api.openProject(root));
     }
   }
-  async function start(region?: AnalysisOptions["region"], scope?: "vocal-events") {
+  async function start(region?: AnalysisOptions["region"], scope?: "vocal-events" | "harmony") {
     if (!snapshot) return;
     if (editor.dirty) await save();
     setMessage("解析を開始しています…");
-    await api.analyze(snapshot.root, { mode, lyrics: region ? (selected?.label ?? "") : lyrics, eventSensitivity, ...(region ? { region } : {}), ...(scope ? { scope } : {}) });
+    await api.analyze(snapshot.root, { mode, lyrics: region ? (selected?.label ?? "") : lyrics, eventSensitivity, beatboxRecall, ...(region ? { region } : {}), ...(scope ? { scope } : {}) });
     previousRunning.current = true;
     setJob({ running: true, kind: "analysis", log: "" }); setViewAuto(false);
-    if (scope) { setTrack("vocalEvents"); setSelectedId(undefined); }
+    if (scope) { setTrack(scope === "harmony" ? "chords" : "vocalEvents"); setSelectedId(undefined); }
   }
   function seek(value: number) {
     const next = Math.min(duration, Math.max(0, value));
@@ -145,6 +152,7 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
   }
   const desktop = api.desktop();
   return <div className="app-shell">
+    {deleteTarget && <div className="delete-overlay"><section className="delete-dialog" role="dialog" aria-modal="true" aria-label="解析データの削除"><h3>「{deleteTarget.name}」の解析データを削除しますか？</h3><p>解析結果・分離音声・手修正・書き出しデータを削除し、一覧から取り除きます。この操作は元に戻せません。</p><p>元の音源と再生用音声は残します。「プロジェクトを開く」から再登録し、再分析できます。</p><div className="button-row"><button autoFocus disabled={locked} onClick={() => setDeleteTarget(null)}>キャンセル</button><button className="danger" disabled={locked} onClick={() => void guarded(async () => { const root = deleteTarget.root; await api.deleteAnalysis(root); if (snapshot?.root === root) { audio.current?.pause(); setSnapshot(null); editor.reset({}); setPlaying(false); } await api.removeSavedProject(root); setSavedProjects(await api.savedProjects()); setDeleteTarget(null); setMessage("解析データを削除しました。元の音源と再生用音声は残っています。"); })}>解析データを削除</button></div></section></div>}
     <header className="app-header">
       <div className="brand"><span className="brand-mark">M</span><div><strong>Music Sweeper</strong><small>音を読み解き、映像へ。</small></div></div>
       <div className="header-actions"><span className={"runtime-badge " + (runtime?.ready ? "ready" : "")}>{runtime?.ready ? "● ローカル解析 準備完了" : desktop ? "○ 解析環境 未準備" : "ブラウザープレビュー"}</span>
@@ -154,16 +162,19 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
     {(error || message) && <div className={"notice " + (error ? "error-notice" : "")} role={error ? "alert" : "status"}><span>{error || message}</span><button aria-label="通知を閉じる" onClick={() => { setError(""); setMessage(""); }}>×</button></div>}
     <div className="workspace">
       <aside className="sidebar">
+        <section className="saved-projects" aria-label="保存した曲"><div className="saved-projects-heading"><strong>保存した曲</strong><button disabled={!desktop || locked} onClick={() => void guarded(async () => setSavedProjects(await api.savedProjects()))}>更新</button></div><p className="muted">解析結果は自動保存されます。曲を選ぶと続きから開けます。</p><div className="saved-project-list">{savedProjects.map(project => <div className="saved-project-item" key={project.root}><button title={project.root} disabled={locked} aria-label={project.name + "を開く"} onClick={() => void guarded(async () => { if (editor.dirty) await save(); install(await api.openProject(project.root)); })}><strong>{project.name}</strong><small>{timeLabel(project.duration)} · {project.hasAnalysis ? "解析履歴あり" : "未解析"}</small><small>{project.createdAt ? new Date(project.createdAt).toLocaleString("ja-JP") : ""}</small></button><button className="remove-saved" disabled={locked} aria-label={project.name + "を削除"} title="解析データを削除" onClick={() => setDeleteTarget(project)}>×</button></div>)}</div>{!savedProjects.length && <p className="muted">保存した曲はまだありません。別の場所のデータは「プロジェクトを開く」で追加できます。</p>}</section>
         <div className="eyebrow">ANALYSIS</div><h2>曲を分析する</h2>
         <label>解析モード<select value={mode} disabled={locked} onChange={e => setMode(e.target.value as Mode)}><option value="japanese">日本語歌唱・精度優先</option><option value="multilingual">多言語の歌もの</option><option value="instrumental">インストゥルメンタル</option></select></label>
         <p className="muted">{mode === "japanese" ? "分離した歌声を日本語に固定して認識し、歌詞の時刻を精密に合わせます。" : mode === "instrumental" ? "歌詞の認識を省き、音楽の構造と主旋律を分析します。" : "言語を自動判別します。歌詞と時刻は推定候補として表示します。"}</p>
         {mode !== "instrumental" && <><label>歌詞（任意）<textarea placeholder={"正しい歌詞があれば貼り付け\n1行＝1フレーズ、繰り返しも曲順に"} rows={6} value={lyrics} disabled={locked} onChange={e => setLyrics(e.target.value)} /></label>
         <button className="text-button" disabled={!desktop || locked} onClick={() => void guarded(async () => { const path = await api.choose("lyrics"); if (path) setLyrics(await api.readLyrics(path)); })}>テキストファイルから読み込む</button></>}
-        <button className="primary full" disabled={!snapshot || !runtime?.ready || locked} onClick={() => void guarded(() => start())}>{snapshot?.project.currentRun ? "全体を再分析" : "分析を開始"}</button>
+        <button className="primary full" disabled={!snapshot || !runtime?.ready || !runtime?.chordMiniReady || locked} onClick={() => void guarded(() => start())}>{snapshot?.project.currentRun ? "全体を再分析" : "分析を開始"}</button>
+        {!runtime?.chordMiniReady && desktop && <div className="event-note"><p className="muted">コード分析にはBTCモデルの準備が必要です。</p><button disabled={!runtime?.ready || locked} onClick={() => void guarded(async () => { await api.setupRuntime(true); setJob({ running: true, kind: "setup", log: "" }); previousRunning.current = true; setShowLog(true); })}>コードモデルをセットアップ</button></div>}
         {snapshot?.project.currentRun && <p className="muted">再分析しても手動修正は保持します。</p>}
         <div className="section-divider"><label>声の表現の検出感度<select value={eventSensitivity} disabled={locked} onChange={e => setEventSensitivity(e.target.value as "standard" | "sensitive")}><option value="standard">標準</option><option value="sensitive">候補を多めに拾う</option></select></label>
           <p className="muted">ラップ・朗読／語り・ビートボックス・ブレス・ハミングの候補を表示。歌詞は削除しません。</p>
           <p className="muted">ラップ・朗読／語りの検出は実験的です。候補が出なくても、その発声がないとは限りません。</p>
+          <label className="check-label"><input type="checkbox" checked={beatboxRecall} disabled={locked} onChange={e => setBeatboxRecall(e.target.checked)} />ビートボックスの候補を広く拾う</label><p className="muted">分離ボーカルの打撃音も補助検出します。ラップ・ブレス・楽器漏れを含むため試聴して確認してください。</p>
           <button className="full" disabled={!snapshot || !runtime?.ready || locked} onClick={() => void guarded(() => start(undefined, "vocal-events"))}>声の表現だけ検出</button>
         </div>
         {job.running && <button className="full danger" onClick={() => void guarded(async () => { await api.cancelJob(); setMessage("解析を中止しました。完了済みの結果は保持されます。"); })}>処理を中止</button>}
@@ -181,14 +192,10 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
           <div className="button-row"><button disabled={!editor.canUndo || busy} onClick={editor.undo}>元に戻す</button><button disabled={!editor.canRedo || busy} onClick={editor.redo}>やり直す</button><button disabled={!editor.dirty || busy} onClick={() => void guarded(save)}>{editor.dirty ? "● 修正を保存" : "保存済み"}</button>
           <button disabled={busy || job.running} onClick={() => void guarded(async () => { if (editor.dirty) await save(); const result = await api.exportProject(snapshot.root); setMessage("書き出しました: " + result.path + (result.untimedLyrics ? "（時刻未確定の歌詞は字幕から除外）" : "")); })}>書き出し ↗</button></div>
         </div>
-        <div className="transport">
-          <button className="play-button" aria-label={playing ? "一時停止" : "再生"} onClick={() => void togglePlay()}>{playing ? "Ⅱ" : "▶"}</button>
-          <button aria-label="先頭に戻る" onClick={() => seek(0)}>↤</button><span className="timecode">{timeLabel(time)} <small>/ {timeLabel(duration)}</small></span>
-          <select aria-label="試聴する音声" value={stem} onChange={e => { switchingAudio.current = true; audio.current?.pause(); setStem(e.target.value); }}><option value="original">オリジナル</option>{Object.keys(snapshot.result.stems ?? {}).map(s => <option key={s} value={s}>{STEM_NAMES[s] ?? s}</option>)}</select>
-          <button className={loop ? "active" : ""} onClick={() => setLoop(loop ? null : { start: 0, end: duration })}>{loop ? "ループ中" : "ループ"}</button>
-          <VolumeControl audio={audio} sourceKey={snapshot.root + "/" + source} />
-          <label className="zoom-control">− <input aria-label="時間軸のズーム" type="range" min={2} max={40} value={zoom} onChange={e => setZoom(Number(e.target.value))} /> ＋</label>
-        </div>
+        <Player playing={playing} time={time} duration={duration} stem={stem}
+          stems={Object.keys(snapshot.result.stems ?? {})} looping={!!loop} zoom={zoom} audio={audio} sourceKey={snapshot.root + "/" + source}
+          onPlay={() => void togglePlay()} onSeek={seek} onStem={value => { switchingAudio.current = true; audio.current?.pause(); setStem(value); }}
+          onLoop={() => setLoop(loop ? null : { start: 0, end: duration })} onZoom={setZoom} />
         <audio ref={audio} src={source ? api.asset(snapshot.root, source) : undefined} onLoadedMetadata={() => { if (audio.current) audio.current.currentTime = currentTime.current; switchingAudio.current = false; }} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} onTimeUpdate={() => {
           if (!audio.current || switchingAudio.current) return; const t = audio.current.currentTime;
           if (loop && (t >= loop.end || t < loop.start)) { audio.current.currentTime = loop.start; return; }
@@ -202,8 +209,10 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
         <button disabled={viewAuto || busy} onClick={addRow}>＋ 再生位置に追加</button><label className="check-label"><input type="checkbox" checked={viewAuto} onChange={e => setViewAuto(e.target.checked)} />自動結果を比較</label>
         {editor.tracks[track] && <button disabled={busy} onClick={() => { const next = { ...editor.tracks }; delete next[track]; editor.change(next); setViewAuto(false); }}>このトラックを自動結果へ戻す</button>}<span className="muted">{rows.length} 項目</span></div>
         {track === "vocalEvents" && !viewAuto && missingVocalCategories.length > 0 && <div className="event-note"><p className="muted">手修正に含まれない分類の自動候補が{missingVocalCategories.length}件あります。現在の修正を保持して追加できます。</p><button disabled={locked} onClick={() => editor.change({ ...editor.tracks, vocalEvents: [...editor.tracks.vocalEvents!, ...missingVocalCategories.map(row => ({ ...row, id: crypto.randomUUID() }))].sort((a, b) => (a.start ?? 0) - (b.start ?? 0)) })}>未追加の声の分類を取り込む</button></div>}
+        {track === "chords" && <ChordControls analysis={snapshot.result}
+          ready={!!runtime?.chordMiniReady} locked={!runtime?.ready || locked} onAnalyze={() => void guarded(() => start(undefined, "harmony"))} />}
         {track === "beats" && <div className="beat-editor"><label>BPM<input aria-label="BPM" type="number" value={bpm} onChange={e => setBpm(e.target.value)} /></label><label>開始秒<input type="number" value={anchor} onChange={e => setAnchor(e.target.value)} /></label><label>小節の拍数<input type="number" value={meter} onChange={e => setMeter(e.target.value)} /></label><button onClick={() => { try { editor.change({ ...editor.tracks, beats: beatGrid(Number(bpm), Number(anchor), duration, Number(meter)) }); setViewAuto(false); } catch (e) { setError(String(e)); } }}>開始位置から拍を再配置</button></div>}
-        <div className="rows-table"><table><thead><tr><th>開始</th><th>終了</th><th>内容</th><th>確認</th></tr></thead><tbody>{rows.map(row => <tr key={row.id} className={selectedId === row.id ? "selected-row" : ""} onClick={() => { setSelectedId(row.id); if (row.start !== null) seek(row.start); }}><td>{row.start === null ? "未確定" : timeLabel(row.start)}</td><td>{row.end === null ? "—" : timeLabel(row.end)}</td><td><button className="row-select" onClick={() => setSelectedId(row.id)}>{row.label}</button></td><td>{row.reviewed ? "確認済み" : "要確認"}</td></tr>)}</tbody></table>{!rows.length && <p className="empty-rows">このトラックにはまだ項目がありません。分析するか、手動で追加できます。</p>}</div>
+        <div className="rows-table"><table><thead><tr><th>開始</th><th>終了</th><th>内容</th><th>確認</th></tr></thead><tbody>{rows.map(row => <tr key={row.id} className={selectedId === row.id ? "selected-row" : ""} onClick={() => { setSelectedId(row.id); if (row.start !== null) seek(row.start); }}><td>{row.start === null ? "未確定" : timeLabel(row.start)}</td><td>{row.end === null ? "—" : timeLabel(row.end)}</td><td><button className="row-select" onClick={() => setSelectedId(row.id)}>{row.label}{row.uncertain ? "（候補）" : ""}</button></td><td>{row.reviewed ? "確認済み" : "要確認"}</td></tr>)}</tbody></table>{!rows.length && <p className="empty-rows">このトラックにはまだ項目がありません。分析するか、手動で追加できます。</p>}</div>
         {!!snapshot.status.errors.length && <section className="analysis-errors"><h3>確認が必要な解析</h3>{snapshot.status.errors.map((e, i) => <p key={i}><strong>{e.stage}</strong> — {e.message}</p>)}</section>}
       </> : <div className="empty-state"><div className="empty-wave">▂ ▄ ▆ ▃ █ ▅ ▂ ▇ ▄ ▆ ▂</div><div className="eyebrow">LISTEN DEEPER. CREATE BETTER.</div><h1>曲の展開を、ひとつの時間軸に。</h1><p>拍、歌詞、コード、楽器の出入り。<br />MVのアイデアにつながる音の変化を見つけましょう。</p><button className="primary" disabled={!desktop || locked} onClick={() => void guarded(() => open(true))}>最初の曲を読み込む</button><small>MP3 · MP4 · M4A · WAV · FLAC / 15分まで</small>{!desktop && <p className="muted">ファイルの分析はデスクトップアプリで利用できます。</p>}</div>}
       {showLog && <section className="log-panel"><h3>処理ログ</h3><p className="muted">{runtime?.path}</p><pre>{job.log || "まだログはありません。"}</pre></section>}

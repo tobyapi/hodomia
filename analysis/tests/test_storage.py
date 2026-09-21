@@ -7,7 +7,7 @@ import tempfile
 import unittest
 import wave
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from storage import create, save_edits, snapshot, export, within, write_json, validate_tracks, row
+from storage import create, save_edits, snapshot, export, within, write_json, validate_tracks, row, delete_analysis
 from lyrics import match_lines
 
 
@@ -30,6 +30,33 @@ class ProjectTests(unittest.TestCase):
         self.assertAlmostEqual(value['project']['duration'], 1, places=2)
         self.assertTrue((self.project / 'audio.wav').exists())
         self.assertEqual(value['edits']['revision'], 0)
+
+    def test_delete_analysis_preserves_original_and_playback_audio(self):
+        before = snapshot(self.project)
+        source = self.project / before['project']['source']['path']
+        audio = self.project / before['project']['audio']
+        originals = (source.read_bytes(), audio.read_bytes())
+        for name in ('runs', 'history', 'exports'):
+            folder = self.project / name
+            folder.mkdir()
+            (folder / 'result.txt').write_text('analysis')
+        result = delete_analysis(self.project)
+        self.assertIsNone(result['project']['currentRun'])
+        self.assertEqual(result['edits']['tracks'], {})
+        self.assertEqual((source.read_bytes(), audio.read_bytes()), originals)
+        self.assertTrue(all(not (self.project / name).exists() for name in ('runs','history','exports')))
+
+    def test_delete_analysis_refuses_audio_inside_analysis_folder(self):
+        project = snapshot(self.project)['project']
+        (self.project / 'runs').mkdir()
+        protected = self.project / 'runs' / 'keep.wav'
+        protected.write_bytes(b'original audio')
+        project['audio'] = 'runs/keep.wav'
+        write_json(self.project / 'project.json', project)
+        with self.assertRaises(ValueError):
+            delete_analysis(self.project)
+        self.assertEqual(protected.read_bytes(), b'original audio')
+        self.assertEqual(snapshot(self.project)['edits']['revision'], 0)
 
     def test_delivery_categories_round_trip_and_export(self):
         rows = [row('v', 0, 0, .6, 'ラップ', category='rap'),
@@ -128,6 +155,42 @@ class ProjectTests(unittest.TestCase):
         self.assertIn('vocalEvents', (path / 'timeline.csv').read_text(encoding='utf-8-sig'))
         self.assertNotIn('ブレス', (path / 'lyrics.srt').read_text(encoding='utf-8'))
         self.assertIn('歌詞', (path / 'lyrics.srt').read_text(encoding='utf-8'))
+
+    def test_chord_run_uses_btc_original_audio_and_preserves_edits_and_history(self):
+        from unittest.mock import patch
+        from types import SimpleNamespace
+        from pipeline import run
+        project = snapshot(self.project)['project']
+        original = {'sourceHash': project['source']['sha256'], 'mode': 'japanese',
+                    'tracks': {'lyrics': [row('l', 0, .1, .8, '歌詞')], 'chords': [row('c', 0, 0, 1, 'C')]},
+                    'series': {}, 'stems': {}, 'engines': {}, 'chordComparisons': {'template': {'rows': []}}}
+        project['currentRun'] = 'previous'
+        previous = self.project / 'runs/previous/result.json'
+        previous.parent.mkdir(parents=True)
+        write_json(previous, original)
+        write_json(self.project / 'project.json', project)
+        save_edits(self.project, {'revision': 0, 'tracks': {'chords': [row('manual', 0, 0, 1, 'G')]}})
+        edits = snapshot(self.project)['edits']
+        engines = SimpleNamespace(configure=lambda _: (self.root, 'cpu'), release=lambda: None,
+                                  separate=None, beats=None, sections=None)
+        chords = [row('chord', 0, 0, 1, 'A:min7')]
+        keys = [row('key', 0, 0, 1, 'A minor')]
+        with patch.dict(sys.modules, {'engines': engines}), patch('socket.create_connection'), patch('socket.socket.connect'), \
+             patch('dsp.basics', return_value=([0], 22050, {}, [])), \
+             patch('dsp.accompaniment', return_value=([1], 'bass + other')), \
+             patch('dsp.estimate_key', return_value=keys) as key, \
+             patch('chordmini.infer', return_value=(chords, {'backend': 'chordmini-btc', 'source': 'original'})) as infer:
+            run(self.project, self.root, {'mode': 'japanese', 'scope': 'harmony'})
+        value = snapshot(self.project)
+        self.assertEqual(value['status']['state'], 'complete')
+        self.assertEqual(value['result']['tracks']['chords'], chords)
+        self.assertEqual(value['result']['tracks']['key'], keys)
+        self.assertEqual(value['result']['tracks']['lyrics'], original['tracks']['lyrics'])
+        self.assertEqual(value['edits'], edits)
+        self.assertNotIn('chordComparisons', value['result'])
+        self.assertEqual(json.loads(previous.read_text(encoding='utf-8')), original)
+        self.assertEqual(infer.call_args.args[0], self.project / 'audio.wav')
+        key.assert_called_once_with([1], 22050, 1.)
 
     def test_vocal_only_run_preserves_lyrics_original_run_and_manual_edits(self):
         from unittest.mock import patch

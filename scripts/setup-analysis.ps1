@@ -13,4 +13,5 @@ if ($LASTEXITCODE -ne 0) { throw '解析パッケージのインストールに�
 & $python (Join-Path $sourceRoot 'analysis/prepare.py') --runtime $RuntimeRoot
 if ($LASTEXITCODE -ne 0) { throw 'モデルのセットアップに失敗しました。ログを確認して再実行してください。' }
 & uv pip freeze --python $python | Set-Content -Encoding utf8 (Join-Path $RuntimeRoot 'requirements.lock.txt')
+& (Join-Path $PSScriptRoot 'setup-chordmini.ps1') -RuntimeRoot $RuntimeRoot
 Write-Output '解析環境の準備が完了しました。'

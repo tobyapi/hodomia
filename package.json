@@ -16,6 +16,7 @@
     "check": "npm run test && npm run test:analysis && npm run build && npm run check:rust",
     "test:analysis": "node scripts/test-analysis.mjs",
     "setup:analysis": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-analysis.ps1",
+    "setup:chordmini": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-chordmini.ps1",
     "harness:prepare": "node scripts/prepare-ui-harness.mjs",
     "doctor": "node scripts/doctor.mjs"
   },
