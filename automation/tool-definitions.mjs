@@ -7,7 +7,7 @@ const revision = z.number().int().nonnegative();
 const runId = z.string().nullable();
 const options = z.strictObject({
   mode: z.enum(['japanese', 'multilingual', 'instrumental']),
-  scope: z.enum(['harmony', 'vocal-events', 'vocal-comparison']).optional(),
+  scope: z.enum(['harmony', 'vocal-events', 'vocal-comparison', 'separation-comparison']).optional(),
   region: z.strictObject({ start: seconds, end: seconds, language: z.enum(['ja', 'en']) }).optional(),
   lyrics: z.string().max(100000).optional(),
   eventSensitivity: z.enum(['standard', 'sensitive']).optional(), beatboxRecall: z.boolean().optional(),
@@ -19,7 +19,7 @@ export const definitions = [
   ['list_projects', 'List saved songs. No audio or complete timeline is returned.', {}, true],
   ['import_audio', 'Copy an allowed local MP3/MP4/M4A/WAV/FLAC into a new project. Source is preserved. No analysis starts.', { source: z.string().min(1) }, false],
   ['get_project', 'Read summary, currentRun, edit revision, track counts and analysis provenance.', { root }, true],
-  ['start_analysis', 'Start a durable local analysis job. Poll get_job until terminal. scope=harmony runs BTC chords/key only; vocal-events detects voice events only; vocal-comparison compares AST and YAMNet on original and existing vocal stem without replacing tracks. Omit scope for full analysis. No network/model downloads.', { root, options }, false],
+  ['start_analysis', 'Start a durable local analysis job. Poll get_job until terminal. scope=harmony runs BTC chords/key only; vocal-events detects voice events only; vocal-comparison compares AST and YAMNet on original and existing vocal stem without replacing tracks. separation-comparison adds Mel-Band vocals/instrumental from the original and compares AST/YAMNet on all vocal sources. separation-comparison adds Mel-Band vocals/instrumental from the original and compares AST/YAMNet on all vocal sources. Omit scope for full analysis. No network/model downloads.', { root, options }, false],
   ['get_vocal_comparison', 'Read saved AST/YAMNet source-specific voice scores and candidates. Omit variantId for summaries; otherwise read frames or candidates with bounded pagination. Scores are uncalibrated and not comparable probabilities; window ranges are not precise voice boundaries.', {
     root, variantId: z.string().optional(), category: z.enum(['beatbox', 'breath', 'humming']).optional(),
     start: seconds.optional(), end: seconds.optional(), kind: z.enum(['frames', 'candidates']).optional(),

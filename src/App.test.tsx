@@ -364,3 +364,23 @@ test("voice comparison sends its own scope and keeps the normal voice track", as
   expect(screen.getByRole('button', { name: '確認した音' })).toBeVisible();
   expect(api.saveEdits).not.toHaveBeenCalled();
 });
+
+test("Mel-Band comparison sends its own scope and exposes independent playback sources", async () => {
+  vi.mocked(api.runtimeStatus).mockResolvedValue({ path: 'runtime', ready: true, yamnetReady: true, melbandReady: true });
+  const value = structuredClone(fixture);
+  value.result.separationComparison = { stems: { melband_vocals: 'mel/v.wav', melband_instrumental: 'mel/i.wav' },
+    engine: { model: 'melband', device: 'cuda', settings: { segmentSize: 801 }, fallback: false } };
+  vi.mocked(api.openProject).mockResolvedValue(value);
+  render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: 'プロジェクトを開く' }));
+  await screen.findByRole('heading', { name: 'テスト曲' });
+  fireEvent.change(screen.getByLabelText('編集トラック'), { target: { value: 'vocalEvents' } });
+  fireEvent.change(screen.getByLabelText('再生位置'), { target: { value: '2' } });
+  fireEvent.click(screen.getByRole('button', { name: 'ループ' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Mel-Band 伴奏' }));
+  expect(screen.getByLabelText('試聴する音声')).toHaveValue('melband_instrumental');
+  expect(screen.getByLabelText('再生位置')).toHaveValue('2');
+  expect(screen.getByRole('button', { name: 'ループ' })).toHaveAttribute('aria-pressed', 'true');
+  fireEvent.click(screen.getByRole('button', { name: 'Mel-Bandで分離して比較' }));
+  await waitFor(() => expect(api.analyze).toHaveBeenCalledWith(fixture.root, expect.objectContaining({ scope: 'separation-comparison' })));
+});

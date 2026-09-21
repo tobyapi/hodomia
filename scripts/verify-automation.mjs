@@ -9,7 +9,7 @@ import { repository } from '../automation/worker-client.mjs';
 
 const args = process.argv.slice(2);
 const scope = args[0] === '--scope' ? args.splice(0, 2)[1] : 'harmony';
-assert.ok(['harmony', 'vocal-comparison'].includes(scope), 'Supported scope: harmony or vocal-comparison');
+assert.ok(['harmony', 'vocal-comparison', 'separation-comparison'].includes(scope), 'Supported scope: harmony, vocal-comparison or separation-comparison');
 const roots = args.map(p => path.resolve(p));
 if (!roots.length) throw new Error('Pass test project folders; a new analysis run is created in each.');
 const read = async file => JSON.parse(await readFile(file, 'utf8'));
@@ -41,16 +41,16 @@ try {
     assert.equal(state.state, 'complete', JSON.stringify(state));
     const after = await read(path.join(root, 'runs', state.runId, 'result.json'));
     for (const [track, rows] of Object.entries(before.tracks)) {
-      if (scope === 'vocal-comparison' || (track !== 'chords' && track !== 'key')) assert.deepEqual(after.tracks[track], rows);
+      if (scope !== 'harmony' || (track !== 'chords' && track !== 'key')) assert.deepEqual(after.tracks[track], rows);
     }
     assert.deepEqual(await read(path.join(root, 'edits.json')), edits);
     assert.equal(await hash(path.join(root, project.source.path)), original);
     assert.equal(await hash(path.join(root, project.audio)), audio);
-    if (scope === 'vocal-comparison') {
+    if (scope !== 'harmony') {
       assert.deepEqual(after.series, before.series);
       assert.deepEqual(after.stems, before.stems);
       const summary = await call('get_vocal_comparison', { root });
-      assert.equal(summary.variants.length, before.stems.vocals ? 4 : 2);
+      assert.equal(summary.variants.length, (after.stems.vocals ? 4 : 2) + (after.separationComparison ? 2 : 0));
       for (const variant of summary.variants) {
         const page = await call('get_vocal_comparison', { root, variantId: variant.id, start: 0, end: 5, limit: 3, expectedRunId: summary.runId });
         assert.equal(page.rows.length, 3);

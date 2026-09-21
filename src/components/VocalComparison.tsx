@@ -20,7 +20,7 @@ export function VocalComparison({ data, duration, time, zoom, ready, locked, onA
     <div className="comparison-heading"><strong>声の検出器を比較</strong><div className="button-row">
       {ready ? <button disabled={locked} onClick={onAnalyze}>AST / YAMNet を比較</button> : <button disabled={locked} onClick={onSetup}>YAMNetをセットアップ</button>}
     </div></div>
-    <p className="muted">原曲・分離ボーカルを別々に比較します。通常の「声の表現」と手修正は保持します。分離ボーカルがない曲は、先に全体分析すると4通りで比較できます。</p>
+    <p className="muted">原曲・分離ボーカルを別々に比較します。保存済みのMel-Bandボーカルも対象です。通常の「声の表現」と手修正は保持します。</p>
     {data && <details open><summary>保存した比較結果{data.runId ? ` · ${data.runId}` : ""}</summary>
       <p className="muted">{data.notice}</p>
       <label className="comparison-category">比較する声<select aria-label="比較する声" value={category} onChange={e => setCategory(e.target.value as ComparisonCategory)}>

@@ -13,7 +13,7 @@ export function asset(root: string, path: string) {
 export const choose = (kind: "source" | "folder" | "project" | "lyrics") => invoke<string | null>("choose_path", { kind });
 export const runtimeStatus = () => invoke<RuntimeStatus>("runtime_status");
 export const jobStatus = () => invoke<Job>("job_status");
-export const setupRuntime = (chordMini = false, yamnet = false) => invoke<void>("setup_runtime", { chordMini, yamnet });
+export const setupRuntime = (chordMini = false, yamnet = false, melband = false) => invoke<void>("setup_runtime", { chordMini, yamnet, melband });
 export const cancelJob = (jobId?: string) => invoke<void>("cancel_job", { jobId });
 export const nextUiRequest = () => invoke<UiRequest | null>("next_ui_request");
 export const ackUiRequest = (requestId: string, state: "applied" | "failed", message?: string) => invoke<UiRequest>("ack_ui_request", { requestId, state, message });
