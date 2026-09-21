@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { ThemeSwitch } from "./ThemeSwitch";
 
-const key = "music-sweeper.theme";
+const key = "hodomia.theme";
 let preferences: Map<string, string>;
 beforeEach(() => {
   preferences = new Map();

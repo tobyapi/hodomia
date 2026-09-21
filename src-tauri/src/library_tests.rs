@@ -16,7 +16,7 @@ fn library_survives_restart_and_deduplicates_default_projects() {
     let external = temp.join("external");
     fs::create_dir_all(&project).unwrap();
     fs::create_dir_all(&external).unwrap();
-    let manifest = json!({"kind":"music-sweeper", "schemaVersion":1, "name":"保存済み", "duration":60, "createdAt":"2026-09-21", "currentRun":"run-1"});
+    let manifest = json!({"kind":"hodomia", "schemaVersion":1, "name":"保存済み", "duration":60, "createdAt":"2026-09-21", "currentRun":"run-1"});
     fs::write(project.join("project.json"), manifest.to_string()).unwrap();
     fs::write(external.join("project.json"), manifest.to_string()).unwrap();
     remember(&registry, &project).unwrap();

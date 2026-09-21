@@ -34,7 +34,7 @@ test("Rust library stays independent and ML remains in worker", () => {
   assert.equal(check([["src-tauri/src/library.rs", '// tauri::State\nlet x = "workspace::grant";']]).length, 0);
 });
 test("staged snapshot ignores unstaged edits; new and deleted files handled", () => {
-  const root = mkdtempSync(path.join(tmpdir(), "sweeper-quality-"));
+  const root = mkdtempSync(path.join(tmpdir(), "hodomia-quality-"));
   const git = (...args) => execFileSync("git", args, { cwd: root, stdio: "pipe" });
   try {
     git("init");

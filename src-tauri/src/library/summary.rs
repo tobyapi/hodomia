@@ -4,7 +4,7 @@ use std::{fs, path::PathBuf};
 pub(super) fn project(root: PathBuf) -> Option<Value> {
     let text = fs::read_to_string(root.join("project.json")).ok()?;
     let value: Value = serde_json::from_str(&text).ok()?;
-    if value["kind"] != "music-sweeper" || value["schemaVersion"] != 1 {
+    if value["kind"] != "hodomia" || value["schemaVersion"] != 1 {
         return None;
     }
     value["name"].as_str()?;

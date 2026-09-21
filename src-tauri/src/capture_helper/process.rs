@@ -10,7 +10,7 @@ pub(super) fn verify(pid: u32) -> Result<(), String> {
     let executable = executable_path(pid)?;
     let own = std::env::current_exe().map_err(crate::errors::message)?;
     if std::path::Path::new(&executable) != own {
-        return Err("撮影ヘルパーはMusic Sweeperからだけ起動できます。".into());
+        return Err("撮影ヘルパーはhodomiaからだけ起動できます。".into());
     }
     Ok(())
 }

@@ -18,6 +18,6 @@
 - 分離はhtdemucs_ft、拍はBeat This、構成はAll-In-One。コードはCQTの長短三和音候補と遷移抑制、主旋律はpYIN。複音・ラップ・ビートボックスは精度保証しない。
 - 手修正はトラック単位の上書き＋保存リビジョン。過去の解析runsを保持し、同一音源・同一分離モデルのステムを再利用する。
 - Windows の Rust テストにも Common Controls v6 マニフェストをリンクする。指定なしでは TaskDialogIndirect のロードが失敗したため、build.rs でアプリとテストに適用。
-- 2026-09-21: 曲取り込みは音源選択1回のみ。保存先はOSのドキュメント/Music Sweeper/Projects。終了ハンドラーは保存後にdestroyを呼び、mainウィンドウだけにallow-destroyを付与する。TauriのonCloseRequestedは通常終了時にも内部でdestroyを使用するため、この権限を省かない。
+- 2026-09-21: 曲取り込みは音源選択1回のみ。保存先はOSのドキュメント/hodomia/Projects。終了ハンドラーは保存後にdestroyを呼び、mainウィンドウだけにallow-destroyを付与する。TauriのonCloseRequestedは通常終了時にも内部でdestroyを使用するため、この権限を省かない。
 - 声の表現はAST AudioSetのsigmoidスコアで独立検出し、ASRが認識できなかった箇所を非言語と見なさない。2秒窓・0.5秒hop、標準閾値0.15/候補多め0.06。分類窓の支持範囲を表示し、同種の重なる窓を結合する。スコアは未校正で、歌詞は自動削除しない。「その他」の自動対象はGroan/Grunt/Whimper/Laughterで、スキャットや無歌詞の母音歌唱は網羅しない。
 - ラップ/語りは既存ASTのRapping/Narration, monologueを使用する実験的候補。一般Speechで語りを代用せず、実曲の未検出を閾値の恣意的引き下げで隠さない。手修正トラックへの新分類追加はUIで明示的に行い、修正保持と行IDの一意性を保証する。

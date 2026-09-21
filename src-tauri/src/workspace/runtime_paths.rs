@@ -20,7 +20,7 @@ pub(super) fn source_root<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Resul
 pub(super) fn runtime_root<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
 ) -> Result<PathBuf, String> {
-    if let Some(path) = std::env::var_os("MUSIC_SWEEPER_RUNTIME") {
+    if let Some(path) = std::env::var_os("HODOMIA_RUNTIME") {
         return Ok(PathBuf::from(path));
     }
     // This initial release targets the user's development PC. Installed copies

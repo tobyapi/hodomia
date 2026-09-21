@@ -22,7 +22,7 @@ fn runtime_info_has_the_frontend_contract() {
     )
     .unwrap();
     let value = response.deserialize::<serde_json::Value>().unwrap();
-    assert_eq!(value["name"], "Music Sweeper");
+    assert_eq!(value["name"], "hodomia");
     assert_eq!(value["version"], env!("CARGO_PKG_VERSION"));
     assert_eq!(value["runtime"], "Tauri");
 }

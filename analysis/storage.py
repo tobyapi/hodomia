@@ -24,8 +24,8 @@ def within(root, relative):
 
 def manifest(root):
     value = read_json(Path(root) / 'project.json')
-    if value.get('schemaVersion') != 1 or value.get('kind') != 'music-sweeper':
-        raise ValueError('Music Sweeper のプロジェクトではありません。')
+    if value.get('schemaVersion') != 1 or value.get('kind') != 'hodomia':
+        raise ValueError('hodomia のプロジェクトではありません。')
     within(root, value['source']['path'])
     within(root, value['audio'])
     if type(value.get('duration')) not in (int, float) or not math.isfinite(value['duration']) or not 0 < value['duration'] <= 900:
@@ -68,7 +68,7 @@ def create(source, parent):
         with copied.open('rb') as stream:
             digest = hashlib.file_digest(stream, 'sha256').hexdigest()
         duration = decode(copied, root / 'audio.wav')
-        value = {'schemaVersion': 1, 'kind': 'music-sweeper', 'id': uuid.uuid4().hex,
+        value = {'schemaVersion': 1, 'kind': 'hodomia', 'id': uuid.uuid4().hex,
                  'name': source.stem, 'createdAt': datetime.now(timezone.utc).isoformat(),
                  'duration': duration, 'source': {'path': 'source/' + source.name, 'sha256': digest},
                  'audio': 'audio.wav', 'currentRun': None}

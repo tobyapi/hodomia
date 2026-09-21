@@ -6,7 +6,7 @@ import { definitions } from './tool-definitions.mjs';
 import { toolResponse } from './tool-response.mjs';
 
 const call = workerClient(configuration());
-const server = new McpServer({ name: 'music-sweeper', version: '0.1.0' });
+const server = new McpServer({ name: 'hodomia', version: '0.1.0' });
 for (const [name, description, shape, readOnly] of definitions) {
   server.registerTool(name, {
     description, inputSchema: z.strictObject(shape),
@@ -18,7 +18,7 @@ for (const [name, description, shape, readOnly] of definitions) {
     return toolResponse(response);
   });
 }
-server.registerResource('artifact', new ResourceTemplate('music-sweeper://artifact/{artifactId}', { list: undefined }),
+server.registerResource('artifact', new ResourceTemplate('hodomia://artifact/{artifactId}', { list: undefined }),
   { description: 'Generated clips and exports only. Local file paths cannot be read through this resource.' }, async (_uri, { artifactId }) => {
     const response = await call('read_artifact', { artifactId });
     if (!response.ok) throw new Error(`${response.error.code}: ${response.error.message}`);

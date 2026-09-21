@@ -21,11 +21,11 @@ def default_projects():
             documents = os.path.expandvars(winreg.QueryValueEx(key, 'Personal')[0])
     else:
         documents = Path.home() / 'Documents'
-    return canonical(documents) / 'Music Sweeper/Projects'
+    return canonical(documents) / 'hodomia/Projects'
 
 
 def default_registry():
-    return Path(os.environ.get('APPDATA', Path.home() / '.local/share')) / 'app.music-sweeper.desktop/library'
+    return Path(os.environ.get('APPDATA', Path.home() / '.local/share')) / 'app.hodomia.desktop/library'
 
 
 def registered(registry):

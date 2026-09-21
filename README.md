@@ -1,4 +1,4 @@
-# Music Sweeper
+# hodomia
 
 Tauri 2 + React 19 のローカル音楽解析アプリ。MP3 / MP4 / M4A / WAV / FLAC を1曲ずつ読み込み、拍、曲構成、歌詞、コード、音高を同じ時間軸で確認・修正できます。1曲15分まで。MP4は最初の音声トラックを使います。
 
@@ -40,7 +40,7 @@ npm run tauri:dev
 
 初回セットアップのみモデルをオンライン取得します。音源・歌詞は送信しません。パッケージとモデルのために数十GBの空き容量を用意してください。アプリ内の「初回セットアップ」「環境を再確認・修復」でも同じ処理を実行できます。解析中はPythonのネット接続を禁止し、キャッシュ不足は明示的な失敗になります。
 
-開発時は `.runtime/`、この開発フォルダーがないインストール先ではアプリデータ内の `runtime/` を使います。`MUSIC_SWEEPER_RUNTIME` で保存先を指定できます。モデルはインストーラーに含めません。
+開発時は `.runtime/`、この開発フォルダーがないインストール先ではアプリデータ内の `runtime/` を使います。`HODOMIA_RUNTIME` で保存先を指定できます。モデルはインストーラーに含めません。
 
 ## 検証と開発ハーネス
 
@@ -70,3 +70,7 @@ pre-commitは複雑度・MIも検査し、pre-pushは `npm run analyze` で全�
 `analysis/requirements.txt` は主要依存、`analysis/requirements.lock.txt` は検証した全依存です。インストール時にはlockを使います。React→`src/api.ts`→Rust→`analysis/cli.py`の順に処理を呼び出します。詳細は `.clean/architecture.md` と `docs/verification.md`。
 
 解析エンジン: Demucs htdemucs_ft、Beat This final0、All-In-One harmonix-all、faster-whisper large-v3、WhisperX、librosa。各モデル・依存のライセンスは配布元に従います。
+
+## 改名後の保存データ
+
+アプリIDは app.hodomia.desktop、保存先はドキュメント内の hodomia/Projects です。以前の保存データは自動移行しません。引き継ぐ場合はバックアップを取り、project.json の kind を hodomia に変更して、新しい保存先にコピーしてください。テーマと音量設定は新しい設定キーで保存します。

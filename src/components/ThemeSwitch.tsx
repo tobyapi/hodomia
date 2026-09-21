@@ -1,7 +1,7 @@
 import { useLayoutEffect, useState } from "react";
 
 type Theme = "dark" | "light";
-const STORAGE_KEY = "music-sweeper.theme";
+const STORAGE_KEY = "hodomia.theme";
 
 function readTheme(): Theme {
   try {

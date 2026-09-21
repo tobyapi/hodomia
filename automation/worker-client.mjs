@@ -5,7 +5,7 @@ import path from 'node:path';
 export const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 export function configuration(args = process.argv.slice(2)) {
-  const values = { runtime: path.resolve(process.env.MUSIC_SWEEPER_RUNTIME ?? path.join(repository, '.runtime')), allowedRoots: [] };
+  const values = { runtime: path.resolve(process.env.HODOMIA_RUNTIME ?? path.join(repository, '.runtime')), allowedRoots: [] };
   const flags = { '--runtime': 'runtime', '--projects': 'projects', '--registry': 'registry', '--allow-root': 'allowedRoots' };
   for (let i = 0; i < args.length; i += 2) {
     const key = flags[args[i]];
@@ -17,7 +17,7 @@ export function configuration(args = process.argv.slice(2)) {
 }
 
 export function workerClient(config) {
-  const python = process.env.MUSIC_SWEEPER_PYTHON ?? path.join(config.runtime, 'venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
+  const python = process.env.HODOMIA_PYTHON ?? path.join(config.runtime, 'venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
   const flags = ['--runtime', config.runtime];
   for (const key of ['projects', 'registry']) if (config[key]) flags.push('--' + key, config[key]);
   for (const root of config.allowedRoots) flags.push('--allow-root', root);

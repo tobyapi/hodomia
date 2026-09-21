@@ -8,7 +8,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { repository } from '../worker-client.mjs';
 
 test('real stdio MCP: import, bounded reads, CAS edits, clips, exports and permission errors', { timeout: 60_000 }, async () => {
-  const folder = await mkdtemp(path.join(os.tmpdir(), 'music-sweeper-mcp-'));
+  const folder = await mkdtemp(path.join(os.tmpdir(), 'hodomia-mcp-'));
   const wav = Buffer.alloc(44 + 32000);
   wav.write('RIFF'); wav.writeUInt32LE(wav.length - 8, 4); wav.write('WAVEfmt ', 8);
   wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22);
@@ -18,7 +18,7 @@ test('real stdio MCP: import, bounded reads, CAS edits, clips, exports and permi
   const transport = new StdioClientTransport({ command: process.execPath, args: [path.join(repository, 'automation/mcp-server.mjs'),
     '--runtime', path.join(folder, 'runtime'), '--projects', path.join(folder, 'projects'),
     '--registry', path.join(folder, 'registry'), '--allow-root', folder], stderr: 'pipe',
-    env: { ...process.env, MUSIC_SWEEPER_PYTHON: process.env.MUSIC_SWEEPER_PYTHON ?? path.join(repository, '.runtime/venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python') } });
+    env: { ...process.env, HODOMIA_PYTHON: process.env.HODOMIA_PYTHON ?? path.join(repository, '.runtime/venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python') } });
   const client = new Client({ name: 'integration-test', version: '1.0.0' });
   try {
     await client.connect(transport);

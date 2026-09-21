@@ -10,8 +10,8 @@ from control_errors import ControlError
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Music Sweeper headless API')
-    parser.add_argument('--runtime', default=os.environ.get('MUSIC_SWEEPER_RUNTIME', str(Path(__file__).resolve().parents[1] / '.runtime')))
+    parser = argparse.ArgumentParser(description='hodomia headless API')
+    parser.add_argument('--runtime', default=os.environ.get('HODOMIA_RUNTIME', str(Path(__file__).resolve().parents[1] / '.runtime')))
     parser.add_argument('--projects')
     parser.add_argument('--registry')
     parser.add_argument('--allow-root', action='append', default=[])

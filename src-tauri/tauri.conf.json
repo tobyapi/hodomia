@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Music Sweeper",
+  "productName": "hodomia",
   "version": "0.1.0",
-  "identifier": "app.music-sweeper.desktop",
+  "identifier": "app.hodomia.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://127.0.0.1:1430",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Music Sweeper",
+        "title": "hodomia",
         "width": 1440,
         "height": 920,
         "minWidth": 1000,

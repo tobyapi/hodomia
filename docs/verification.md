@@ -55,7 +55,7 @@ AST AudioSet分類を追加。固定リビジョン `f826b80d28226b62986cc218e5c
 
 ## ファイル選択・終了処理の修正
 
-曲取り込み時は音源と保存先の2つのダイアログを連続で開いていた。音源選択1回に変更し、保存先はOSのドキュメント/Music Sweeper/Projectsへ統一した。既存プロジェクトは移動していない。
+曲取り込み時は音源と保存先の2つのダイアログを連続で開いていた。音源選択1回に変更し、保存先はOSのドキュメント/hodomia/Projectsへ統一した。既存プロジェクトは移動していない。
 
 終了ハンドラーはTauri SDK内部でdestroyを呼ぶが、mainウィンドウにallow-destroyがなかった。権限を追加し、終了を一度保留して必要な保存を待ち、明示的にdestroyする処理に変更した。終了の再入、保存失敗、権限等の終了失敗を扱い、WebViewではブラウザー用beforeunload警告を重ねない。
 
@@ -121,7 +121,7 @@ Playerコンポーネントに再生/一時停止、シーク、10秒戻る/進�
 
 ## 保存した曲の一覧（2026-09-21）
 
-Documents/Music Sweeper/Projects内の既存プロジェクトを発見し、開いた外部プロジェクトの場所もアプリデータ/libraryへ記録。起動後に一覧から解析済みデータを再利用できる。曲切り替え前に適用済み手修正を保存。存在しない/壊れた一覧項目を除外し、同一パスは重複表示しない。
+Documents/hodomia/Projects内の既存プロジェクトを発見し、開いた外部プロジェクトの場所もアプリデータ/libraryへ記録。起動後に一覧から解析済みデータを再利用できる。曲切り替え前に適用済み手修正を保存。存在しない/壊れた一覧項目を除外し、同一パスは重複表示しない。
 
 npm run checkとWindowsビルド成功。UIテストで一覧クリック時にimport/analysisを呼ばずsnapshotを開くことを確認。Rustテストでファイルからの登録復元、標準保存先との重複排除、破損項目と移動済みデータの除外を確認。ブラウザーハーネスで一覧表示と保存した解析の表示を確認。
 
@@ -172,7 +172,7 @@ src/api.tsのassetで、Windows形式のパスだけ区切りをバックスラ�
 
 自動テストで空出力・NaN・重複・空白・長い末尾欠落を拒否、元ラベル保持とconfidence非付与、strict=False再試行拒否、統計欠落拒否を確認。UIテストでは推定方式をIPCへ渡すこと、方式別比較で手修正を変更しないこと、独立したモデルセットアップを確認。ブラウザーハーネスで実曲の4方式選択とBTC表示への切り替えを確認。ネイティブGUIの自動操作は行っていない。
 
-`npm run check`成功（UI30件、Python29件、Rust2件、TypeScript/Vite、rustfmt/clippy）。`npm run tauri:build -- --no-bundle`成功。更新したWindows実行ファイルはsrc-tauri/target/release/music-sweeper.exe。
+`npm run check`成功（UI30件、Python29件、Rust2件、TypeScript/Vite、rustfmt/clippy）。`npm run tauri:build -- --no-bundle`成功。更新したWindows実行ファイルはsrc-tauri/target/release/hodomia.exe。
 
 ## BTCへの統一（2026-09-21）
 

@@ -57,7 +57,7 @@ test("playback volume survives stem changes and reopening the app", async () => 
 });
 
 test("invalid saved volume falls back to a valid playback level", async () => {
-  window.localStorage.setItem("music-sweeper.playback-volume", '{"volume":12,"muted":false}');
+  window.localStorage.setItem("hodomia.playback-volume", '{"volume":12,"muted":false}');
   const { container } = render(<App />);
   fireEvent.click(screen.getByRole("button", { name: "プロジェクトを開く" }));
   await screen.findByRole("heading", { name: "テスト曲" });

@@ -15,7 +15,7 @@
 | フィールド | 内容 |
 | --- | --- |
 | `root` | 書き出し元プロジェクトの絶対パス |
-| `project` | プロジェクト情報。`schemaVersion: 1`、`kind: "music-sweeper"`、`id`、`name`、`createdAt`（UTCのISO 8601）、`duration`（秒）、`source`、`audio`、`currentRun`を含む |
+| `project` | プロジェクト情報。`schemaVersion: 1`、`kind: "hodomia"`、`id`、`name`、`createdAt`（UTCのISO 8601）、`duration`（秒）、`source`、`audio`、`currentRun`を含む |
 | `project.source` | `path`はプロジェクト内の原本コピーへの相対パス、`sha256`は原本のSHA-256 |
 | `project.audio` / `project.currentRun` | 再生用音声の相対パス / 現在の解析runのID。未解析なら`currentRun`は`null` |
 | `result` | 現在のrunの自動解析結果。未解析なら`{}`。手修正は含まない |
@@ -82,7 +82,7 @@
   "root": "D:/songs/example-project",
   "project": {
     "schemaVersion": 1,
-    "kind": "music-sweeper",
+    "kind": "hodomia",
     "id": "example-project-id",
     "name": "サンプル曲",
     "createdAt": "2026-01-01T00:00:00+00:00",

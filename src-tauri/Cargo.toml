@@ -1,11 +1,11 @@
 [package]
-name = "music-sweeper"
+name = "hodomia"
 version = "0.1.0"
-description = "Music Sweeper desktop application"
+description = "hodomia desktop application"
 edition = "2021"
 
 [lib]
-name = "music_sweeper_lib"
+name = "hodomia_lib"
 crate-type = ["rlib"]
 
 [build-dependencies]

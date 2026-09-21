@@ -23,7 +23,7 @@ def capture(runtime, timeoutSeconds=10):
             if response.exists():
                 return read_capture(response, png, request_id)
             time.sleep(0.1)
-        raise ControlError('GUI_TIMEOUT', 'GUIから撮影結果を受信できません。同じruntimeのMusic Sweeperを開いてください。')
+        raise ControlError('GUI_TIMEOUT', 'GUIから撮影結果を受信できません。同じruntimeのhodomiaを開いてください。')
     finally:
         request.unlink(missing_ok=True)
         response.unlink(missing_ok=True)

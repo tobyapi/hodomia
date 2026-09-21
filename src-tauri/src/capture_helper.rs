@@ -20,7 +20,7 @@ fn capture(id: String) -> Result<(), String> {
         .map_err(crate::errors::message)?
         .into_iter()
         .find(|w| w.pid().ok() == Some(parent) && w.id().ok() == Some(id))
-        .ok_or("撮影対象のMusic Sweeperウィンドウが見つかりません。")?;
+        .ok_or("撮影対象のhodomiaウィンドウが見つかりません。")?;
     let image = window.capture_image().map_err(crate::errors::message)?;
     let mut png = Cursor::new(Vec::new());
     image

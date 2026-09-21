@@ -25,7 +25,7 @@ pub fn run() {
             Ok(())
         })
         .run(tauri::generate_context!())
-        .expect("failed to run Music Sweeper");
+        .expect("failed to run hodomia");
 }
 
 #[cfg(test)]

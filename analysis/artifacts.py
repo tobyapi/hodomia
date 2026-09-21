@@ -16,7 +16,7 @@ class Artifacts:
         artifact_id = uuid.uuid4().hex
         self.folder.mkdir(parents=True, exist_ok=True)
         write_json(self.folder / (artifact_id + '.json'), dict(root=str(root), path=relative, mimeType=mime))
-        return dict(artifactId=artifact_id, uri='music-sweeper://artifact/' + artifact_id, path=str(path), mimeType=mime)
+        return dict(artifactId=artifact_id, uri='hodomia://artifact/' + artifact_id, path=str(path), mimeType=mime)
 
     def read(self, artifact_id, authorize):
         if not isinstance(artifact_id, str) or len(artifact_id) != 32 or any(c not in '0123456789abcdef' for c in artifact_id):
@@ -27,7 +27,7 @@ class Artifacts:
         if path.stat().st_size > 16_000_000:
             raise ControlError('TOO_LARGE', 'ファイルが大きすぎます。時間範囲を絞って取得してください。')
         data = path.read_bytes()
-        result = dict(uri='music-sweeper://artifact/' + artifact_id, mimeType=value['mimeType'])
+        result = dict(uri='hodomia://artifact/' + artifact_id, mimeType=value['mimeType'])
         if value['mimeType'] == 'audio/wav':
             result['blob'] = base64.b64encode(data).decode('ascii')
         else:

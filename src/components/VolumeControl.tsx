@@ -1,6 +1,6 @@
 import { useEffect, useState, type RefObject } from "react";
 
-const STORAGE_KEY = "music-sweeper.playback-volume";
+const STORAGE_KEY = "hodomia.playback-volume";
 function readVolume() {
   try {
     const value = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null");

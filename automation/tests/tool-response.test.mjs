@@ -14,7 +14,7 @@ test('errors and artifact links retain their MCP representation', () => {
   const error = { schemaVersion: 1, ok: false, error: { code: 'GUI_TIMEOUT' } };
   assert.deepEqual(toolResponse(error).structuredContent, error);
   assert.equal(toolResponse(error).isError, true);
-  const artifact = { uri: 'music-sweeper://artifact/example', artifactId: 'example', mimeType: 'audio/wav' };
+  const artifact = { uri: 'hodomia://artifact/example', artifactId: 'example', mimeType: 'audio/wav' };
   const result = toolResponse({ ok: true, value: { artifact } });
   assert.equal(result.content[1].type, 'resource_link');
   assert.equal(result.content[1].uri, artifact.uri);

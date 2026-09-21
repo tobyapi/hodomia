@@ -14,5 +14,5 @@ pub(super) fn projects<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<P
         .path()
         .document_dir()
         .map_err(crate::errors::message)?
-        .join("Music Sweeper/Projects"))
+        .join("hodomia/Projects"))
 }

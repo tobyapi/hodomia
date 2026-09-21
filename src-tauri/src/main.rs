@@ -2,8 +2,8 @@
 
 fn main() {
     #[cfg(windows)]
-    if music_sweeper_lib::run_if_requested() {
+    if hodomia_lib::run_if_requested() {
         return;
     }
-    music_sweeper_lib::run();
+    hodomia_lib::run();
 }

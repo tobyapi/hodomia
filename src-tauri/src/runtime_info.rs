@@ -8,7 +8,7 @@ pub(crate) struct RuntimeInfo {
 #[tauri::command]
 pub(crate) fn runtime_info() -> RuntimeInfo {
     RuntimeInfo {
-        name: "Music Sweeper",
+        name: "hodomia",
         version: env!("CARGO_PKG_VERSION"),
         runtime: "Tauri",
     }

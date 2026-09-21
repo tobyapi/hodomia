@@ -37,7 +37,7 @@ export function rustMetrics(files) {
   const version = execFileSync(command, ["--version"], { encoding: "utf8" });
   if (!version.trim().endsWith(` ${config.tools.metrics}`)) throw new Error("Run npm run setup:quality: Rust metrics version mismatch");
   // The analyzer respects .gitignore, so sources must be outside ignored test-results.
-  const temp = mkdtempSync(path.join(tmpdir(), "sweeper-quality-metrics-"));
+  const temp = mkdtempSync(path.join(tmpdir(), "hodomia-quality-metrics-"));
   try {
     const source = path.join(temp, "source");
     const output = path.join(temp, "output");
