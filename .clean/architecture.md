@@ -41,3 +41,5 @@ MCPはautomation/mcp-server.mjs → worker-client.mjs → headless.py。公式SD
 - `analysis/vocal_percussion.py`: 高感度の打撃音候補生成。意味分類や校正済み確率を返さず、声の分類結果と区別する。コード推定はBTCへ統一し、dspは伴奏からキーだけを推定する。
 - `analysis/chordmini.py`: 学習済みコード推定のプロセス境界。インストール検証、取消、.lab検証、来歴保存を担当。`chordmini_runner.py`は分離venv内で固定した公式前処理・推論を呼び、厳密な重み読込と通信禁止を強制する。`chordmini_install.py`とsetup-chordmini.ps1が初回準備を担当する。
 - `components/ChordControls.tsx`: BTC固定の再推定操作と旧解析結果の案内。方式選択はなく、pipelineは新しいコード解析でchordComparisonsを生成しない。旧runsと手修正は保持し、コード解析に失敗しても従来方式へフォールバックしない。
+
+- 表示テーマ: `components/ThemeSwitch.tsx` がライト／ダークの選択と設定保存を担当し、`theme.css` の変数で画面とSVGの配色を統一する。

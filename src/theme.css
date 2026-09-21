@@ -1,0 +1,80 @@
+:root {
+  color-scheme: dark;
+  --bg: #10141d;
+  --surface: #181e29;
+  --surface-raised: #202938;
+  --surface-hover: #2b3749;
+  --field: #111824;
+  --text: #e8edf5;
+  --muted: #a5b3c7;
+  --line: #344156;
+  --accent: #91b9ff;
+  --accent-hover: #b4cfff;
+  --on-accent: #0e2345;
+  --accent-soft: #233b60;
+  --danger: #ffb2b7;
+  --error-bg: #452830;
+  --success: #91dbbf;
+  --success-bg: #1d3934;
+  --warning: #f1c786;
+  --timeline: #121a26;
+  --lane: #172130;
+  --region: #2b4c70;
+  --sections: #514270;
+  --lyrics: #21554e;
+  --words: #274f65;
+  --vocal-events: #633c55;
+  --chords: #604a2c;
+  --beat: #91a7c4;
+  --playhead: #f6f9ff;
+  --waveform: #7ccdbb;
+  --energy: #efc06a;
+  --pitch: #c7a7f2;
+  --stem: #88b9f5;
+  --overlay: #080e1aaa;
+  --shadow: 0 8px 28px #00000026;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f2f5fa;
+  --surface: #ffffff;
+  --surface-raised: #edf2f9;
+  --surface-hover: #e0e8f4;
+  --field: #ffffff;
+  --text: #202e43;
+  --muted: #52647c;
+  --line: #c2cede;
+  --accent: #245dc1;
+  --accent-hover: #174caa;
+  --on-accent: #ffffff;
+  --accent-soft: #e1ecff;
+  --danger: #a7253b;
+  --error-bg: #ffe8ec;
+  --success: #176248;
+  --success-bg: #e3f4ec;
+  --warning: #89500e;
+  --timeline: #ffffff;
+  --lane: #f4f7fb;
+  --region: #d7e6f8;
+  --sections: #e5ddf7;
+  --lyrics: #ccece4;
+  --words: #d3eaf5;
+  --vocal-events: #f3dce9;
+  --chords: #f4e4c7;
+  --beat: #647c9d;
+  --playhead: #163f82;
+  --waveform: #197565;
+  --energy: #9a600a;
+  --pitch: #7844af;
+  --stem: #2466ad;
+  --overlay: #1b294d66;
+  --shadow: 0 8px 28px #25395f14;
+}
+.theme-switch { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); }
+.theme-switch button { display: flex; align-items: center; gap: 5px; padding: 6px 9px; border: 0; background: transparent; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.theme-switch button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.theme-switch svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; cursor: inherit; }
+::selection { background: var(--accent-soft); color: var(--text); }
+* { scrollbar-color: var(--line) var(--bg); scrollbar-width: thin; }
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: .85; }
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
