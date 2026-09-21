@@ -1,15 +1,45 @@
 # hodomia
 
-Tauri 2 + React 19 のローカル音楽解析アプリ。MP3 / MP4 / M4A / WAV / FLAC を1曲ずつ読み込み、拍、曲構成、歌詞、コード、音高を同じ時間軸で確認・修正できます。1曲15分まで。MP4は最初の音声トラックを使います。
-
-## ドキュメント
-
-- [使い方](docs/usage.md)：曲の読み込み、解析、再生、テーマ切り替え、編集、保存・削除、推定の限界
-- [出力JSONとプロジェクト形式](docs/json-format.md)：保存構成、フィールド、単位、具体例
-- [CLI・MCPによる自動操作](docs/automation.md)
-- [品質ゲート](docs/quality-gate.md) / [構成](.clean/architecture.md) / [検証記録](docs/verification.md)
+曲の拍、構成、歌詞、コード、音高を同じ時間軸で確認・修正できるローカル音楽解析アプリです。MP3 / MP4 / M4A / WAV / FLACに対応し、1曲15分まで扱えます。MP4は最初の音声トラックを使います。
 
 初回セットアップ後の解析はローカルで実行します。自動推定には誤りや未確定の情報が含まれるため、試聴して確認・修正してください。
+
+## はじめる
+
+このリポジトリをコーディングエージェントで開き、次のプロンプトを渡してください。初回は依存パッケージとモデルをダウンロードするため、ネット接続と数十GBの空き容量が必要です。
+
+```text
+hodomiaをこのWindows環境で使えるようにセットアップし、デスクトップアプリを起動してください。
+
+AGENTS.mdとdocs/development.mdを読み、必要な同梱スキルを使って進めてください。
+まず環境を診断し、不足する依存関係と解析モデルを準備してください。
+実際のTauriアプリが起動するところまで確認し、残った問題があれば報告してください。
+```
+
+## エージェントから操作する
+
+GUIに加えて、CLIとMCPで保存曲の取得、解析、区間の確認・修正、音声クリップの切り出し、JSON/CSV/SRTの書き出しを操作できます。初回セットアップを済ませてから、音源のパスを書き換えて依頼してください。
+
+```text
+docs/automation.mdを読み、hodomiaのCLIで次の曲を解析してください。
+
+音源：<音源ファイルの絶対パス>
+解析モード：日本語歌唱・精度優先
+
+この音源があるフォルダーを許可して取り込み、解析完了までジョブの状態を確認してください。
+完了したら、BPM、曲構成、歌詞の推定結果を要約し、プロジェクトの保存先を教えてください。
+未確定の時刻や未確認の推定はそのまま区別し、音源や歌詞を外部へ送信しないでください。
+```
+
+MCP対応クライアントへ接続するときは、次のように依頼できます。
+
+```text
+docs/automation.mdに従って、この環境のhodomia用MCP接続設定を生成してください。
+使用するクライアント：<クライアント名>
+操作を許可するフォルダー：<フォルダーの絶対パス>
+
+接続後に保存した曲の一覧を取得できることを確認してください。
+```
 
 ## 画面
 
@@ -17,60 +47,21 @@ Tauri 2 + React 19 のローカル音楽解析アプリ。MP3 / MP4 / M4A / WAV 
 
 ![ダークモードの解析画面](docs/images/dark-mode.jpg)
 
-## MCPとヘッドレスモード
+## 変更を依頼する
 
-GUIに加えて、**MCPサーバーとヘッドレスCLI**を利用できます。AIクライアントやスクリプトから、保存曲の取得、非同期解析、区間検索・編集、音声クリップの切り出し、JSON/CSV/SRTの書き出しを操作できます。解析環境とプロジェクト形式はGUIと共通です。
+```text
+hodomiaに次の変更を加えてください。
 
-- **ヘッドレスCLI**：GUIを開かずに操作し、結果をJSONで受け取ります。例：`node scripts/headless.mjs list_projects`。
-- **MCP**：`node automation/mcp-server.mjs`で標準入出力のサーバーを起動します。クライアント用の接続設定は`node scripts/mcp-config.mjs`で生成できます。
-- **スクリーンショット**：`capture_app`で起動中のWindowsアプリをPNG撮影できます。MCPには画像として、CLIには保存先とbase64を返します。[撮影方法](docs/automation.md#アプリのスクリーンショット)を参照してください。
+変更内容：<実現したい動作や修正したい問題>
 
-初回の解析環境セットアップは必要です。GUIで開始した解析もアプリ終了後に継続するため、中止にはキャンセル操作を使ってください。許可フォルダーの指定、接続設定、各操作の引数は[CLI・MCPによる自動操作](docs/automation.md)を参照してください。
-
-## 開発環境の準備
-
-Node.js 22以上、Rust stable MSVC、Visual Studio C++ Build Tools / Windows SDK、WebView2、[uv](https://docs.astral.sh/uv/getting-started/installation/) が必要です。解析環境はPython3.11、CUDA12.8対応PyTorch。NVIDIA GPUがない場合はCPUを使用し、時間がかかります。8GB GPUでモデルを順次読み込む構成です。
-
-```powershell
-npm ci
-npm run doctor
-npm run setup:analysis
-npm run tauri:dev
+AGENTS.md、.clean/architecture.md、docs/development.mdを読み、同梱スキルに従って実装してください。
+変更に必要な検証とプロジェクト指定のチェックを実行し、変更点と結果を報告してください。
 ```
 
-初回セットアップのみモデルをオンライン取得します。音源・歌詞は送信しません。パッケージとモデルのために数十GBの空き容量を用意してください。アプリ内の「初回セットアップ」「環境を再確認・修復」でも同じ処理を実行できます。解析中はPythonのネット接続を禁止し、キャッシュ不足は明示的な失敗になります。
+## ドキュメント
 
-開発時は `.runtime/`、この開発フォルダーがないインストール先ではアプリデータ内の `runtime/` を使います。`HODOMIA_RUNTIME` で保存先を指定できます。モデルはインストーラーに含めません。
-
-## 検証と開発ハーネス
-
-`npm ci` / `npm install` でGitのpre-commitフックを導入します。このチェックアウトで再設定する場合は `npm run hooks:install`。
-フックはステージ済みのソース全体、`npm run check:quality` とCIは作業ツリーを検査します。
-`npm run setup:quality` で固定版のRust解析ツールを導入します（初回はネット接続が必要）。
-pre-commitは複雑度・MIも検査し、pre-pushは `npm run analyze` で全解析を実行します。
-既存違反は `.clean/quality-baseline.json` に記録し、新規違反・悪化を禁止します。
-改善後は `npm run quality:prune` で許容値を縮めて一緒にコミットします。基準と操作は [品質ゲート](docs/quality-gate.md)。
-ソース（テスト・スクリプトを含む）の150行超は警告です。空行・コメントも行数に含めます。
-厳格に失敗させたい場合は `npm run check:quality -- --strict-length` を使います。
-既存の長いファイルも警告し、例外リストで隠しません。生成物・依存・モデル・音源は対象外です。
-依存境界違反とReactソースの循環依存はコミット／CIを失敗させます。詳細は `.clean/architecture.md`。
-凝集度の意味的な良し悪しを自動判定するものではなく、責務の混在を検知する補助です。
-
-| コマンド | 内容 |
-| --- | --- |
-| `npm run analyze` | 複雑度・MI・依存関係・Rust Clippy。JSONレポートを出力 |
-| `npm run check` | UI・編集、Python保存/DSP、型検査、ビルド、Rustテスト/Clippy |
-| `npm run tauri:build -- --no-bundle` | Windows実行ファイルの生成 |
-| `npm run tauri:build` | NSISインストーラーの生成 |
-| `npm run dev` | localhost:1430のブラウザープレビュー |
-| `npm run harness:prepare -- "プロジェクトのパス"` | 実データのブラウザー表示用コピーを作成 |
-
-ハーネスは開発サーバーの `/tests/ui/`。修正保存はメモリー内のみで、解析・外部書き出しは行いません。本番ビルドには入りません。実曲・モデル・ハーネス用データはGit対象外です。CIは合成音と軽量依存で実行し、GPUモデルやユーザー音源を取得しません。
-
-`analysis/requirements.txt` は主要依存、`analysis/requirements.lock.txt` は検証した全依存です。インストール時にはlockを使います。React→`src/api.ts`→Rust→`analysis/cli.py`の順に処理を呼び出します。詳細は `.clean/architecture.md` と `docs/verification.md`。
-
-解析エンジン: Demucs htdemucs_ft、Beat This final0、All-In-One harmonix-all、faster-whisper large-v3、WhisperX、librosa。各モデル・依存のライセンスは配布元に従います。
-
-## 改名後の保存データ
-
-アプリIDは app.hodomia.desktop、保存先はドキュメント内の hodomia/Projects です。以前の保存データは自動移行しません。引き継ぐ場合はバックアップを取り、project.json の kind を hodomia に変更して、新しい保存先にコピーしてください。テーマと音量設定は新しい設定キーで保存します。
+- [使い方](docs/usage.md)：読み込み、解析、再生、編集、保存、改名前のデータの引き継ぎ
+- [CLI・MCPによる自動操作](docs/automation.md)：接続設定、操作の引数、アプリの撮影
+- [出力JSONとプロジェクト形式](docs/json-format.md)
+- [開発環境と検証](docs/development.md)：依存関係、セットアップ、ビルド、開発ハーネス
+- [同梱スキル](docs/bundled-skills.md) / [品質ゲート](docs/quality-gate.md) / [構成](.clean/architecture.md) / [検証記録](docs/verification.md)
