@@ -91,6 +91,14 @@ npm run tauri:dev
 
 ## 検証と開発ハーネス
 
+`npm ci` / `npm install` でGitのpre-commitフックを導入します。このチェックアウトで再設定する場合は `npm run hooks:install`。
+フックはステージ済みのソース全体、`npm run check:quality` とCIは作業ツリーを検査します。
+ソース（テスト・スクリプトを含む）の150行超は警告です。空行・コメントも行数に含めます。
+厳格に失敗させたい場合は `npm run check:quality -- --strict-length` を使います。
+既存の長いファイルも警告し、例外リストで隠しません。生成物・依存・モデル・音源は対象外です。
+依存境界違反とReactソースの循環依存はコミット／CIを失敗させます。詳細は `.clean/architecture.md`。
+凝集度の意味的な良し悪しを自動判定するものではなく、責務の混在を検知する補助です。
+
 | コマンド | 内容 |
 | --- | --- |
 | `npm run check` | UI・編集、Python保存/DSP、型検査、ビルド、Rustテスト/Clippy |

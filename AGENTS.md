@@ -4,6 +4,7 @@
 - UI は src/、Tauri 呼び出しは src/api.ts、Rust は src-tauri/src/、解析ワーカーは analysis/ に置く。
 - ブラウザーのプレビューと実際の Tauri IPC を区別する。テストのモックを製品コードに入れない。
 - 変更後は npm run check。ネイティブ設定を変えた場合は npm run tauri:build -- --no-bundle も実行する。
+- 1ファイル150行を目安に、責務単位で構成する。check:qualityは行数超過を警告し依存境界違反をエラーにする。pre-commitはステージ済み内容を検査する。警告回避のために行を圧縮しない。
 - 1曲・15分以内のローカル解析。日本語歌唱、多言語、インストに対応する。Audio2Face/OSC 機能は対象外。
 - 解析中はネット接続しない。モデル取得は初回セットアップだけ。モデル・音源・実曲テスト結果をGitに追加しない。
 - runs/ の自動結果と edits.json の手修正を分離する。未確定時刻は null、未確認の自動推定は reviewed=false とする。

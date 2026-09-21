@@ -1,5 +1,21 @@
 # 構成
 
+## 自動チェック
+
+`scripts/check-quality.mjs` をpre-commitと `npm run check`（CI含む）で実行する。
+1ファイル150物理行を目安とし、超過は警告。分割は責務に沿って行い、行の圧縮で回避しない。
+全ソースを対象にし、既存超過を免除しない。`--strict-length` で超過もエラーにできる。
+TypeScript ASTで通常import・再export・文字列の動的import/requireを検査する。
+UIのTauri依存はapi.tsと終了処理のuseCloseSave.tsへ限定する。
+componentsはApp/api/useCloseSaveに依存せず、操作をpropsで受け取る。
+types/editingはtypesのみ、apiはtypes/Tauriのみを参照する。
+製品UIからテスト・Python・Rust・MCP実装への依存と、相対importの循環を禁止する。
+Rustは字句検査でlibraryからtauri/workspaceへの依存、Rust内MLライブラリ参照を禁止する。
+Rustの完全な依存グラフ、マクロ展開、別名経由や計算された動的importは検査しない。
+これらは凝集度の代理指標であり、責務が一つかどうかはレビューでも確認する。
+
+## 依存方向
+
 React UI → src/api.ts → Tauri IPC → Rust workspace → Python CLI。
 
 自動操作はheadless.py → control.py → storage/jobs/pipeline。stdioの形式と業務操作を分離する。jobsは独立ワーカーと永続状態を所有し、lockingのOSファイルロックをGUI側の保存・解析にも適用する。project_libraryは既存のGUI登録ファイルを読み取る。
