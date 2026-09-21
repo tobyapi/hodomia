@@ -1,4 +1,4 @@
-// Opt-in real-model check. Creates a new harmony run in each explicitly supplied project.
+// Opt-in real-model check. Creates a new run of the selected scope in each supplied project.
 import { Client } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { readFile } from 'node:fs/promises';
@@ -11,7 +11,7 @@ const args = process.argv.slice(2);
 const scope = args[0] === '--scope' ? args.splice(0, 2)[1] : 'harmony';
 assert.ok(['harmony', 'vocal-comparison'].includes(scope), 'Supported scope: harmony or vocal-comparison');
 const roots = args.map(p => path.resolve(p));
-if (!roots.length) throw new Error('Pass test project folders; a new BTC harmony run is created in each.');
+if (!roots.length) throw new Error('Pass test project folders; a new analysis run is created in each.');
 const read = async file => JSON.parse(await readFile(file, 'utf8'));
 const hash = async file => createHash('sha256').update(await readFile(file)).digest('hex');
 const client = new Client({ name: 'real-model-verification', version: '1.0.0' });

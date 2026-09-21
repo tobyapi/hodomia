@@ -152,3 +152,26 @@ src/api.tsのassetで、Windows形式のパスだけ区切りをバックスラ�
 更新した実際のWindowsアプリを起動し、ヘッドレスAPIから保存済み「検証曲A」の12〜18秒・声の表現トラックを指定。約2秒でGUIからapplied応答を確認した。音源・解析結果は変更していない。自動再生はしない。表示操作のネイティブIPC経路の確認であり、目視によるレイアウト評価ではない。
 
 ローカル検証ログ: test-results/gui-stage4-check.log、test-results/mcp-real-songs.log、test-results/automation-native-build.log、test-results/native-display-verification.json。音源や実曲結果・ローカルMCP設定はGitに含めない。
+
+## AST / YAMNetの比較（2026-09-21）
+
+公式google/yamnet/1 SavedModelを取得。アーカイブSHA-256はb80da2a1a56926fb0767205051a200dd7b3beaf3ea1ea126c42a53943996e5e0。独立Python3.11、TensorFlow2.20.0、CPUで推論。0.2秒・10.095秒・11.2秒・19.695秒の入力で、分割推論と公式モデルの一括推論の各対象クラスのスコアが一致（rtol=1e-4、atol=1e-6）。公式モデルの端点パディングで追加される窓も最終チャンクで保持する。
+
+MCPから許可済み2曲の参照プロジェクトへscope=vocal-comparisonを実行し、どちらもcomplete。原曲コピーと再生用音声のSHA-256、手修正、全通常トラック、波形等のseries、分離音声参照の不変をassertした。比較取得の概要とページングも実MCP経由で確認した。
+
+| 曲 | 検出器・入力 | ビートボックス候補 | ブレス候補 | ハミング候補 |
+| --- | --- | ---: | ---: | ---: |
+| 検証曲A | AST・原曲 | 2 | 0 | 0 |
+| 検証曲A | AST・分離ボーカル | 1 | 4 | 2 |
+| 検証曲A | YAMNet・原曲 | 2 | 0 | 0 |
+| 検証曲A | YAMNet・分離ボーカル | 0 | 3 | 2 |
+| 検証曲B | AST・原曲 | 1 | 4 | 0 |
+| 検証曲B | AST・分離ボーカル | 0 | 6 | 1 |
+| 検証曲B | YAMNet・原曲 | 1 | 2 | 0 |
+| 検証曲B | YAMNet・分離ボーカル | 2 | 3 | 8 |
+
+ASTは開始/継続0.15、YAMNetは開始0.15/継続0.10の仮基準。通常の打撃音補助検出は表に含めない。異なる解析窓・閾値の候補数であり、認識精度の順位ではない。時刻付きの正解注釈はないため適合率・再現率・境界誤差は未評価。特に「検証曲A」のYAMNet分離ボーカルはビートボックス候補0件で、既存ASTを置き換える根拠にはならない。
+
+ブラウザーハーネスで実曲の4系列、分類切り替えを確認。YAMNetボーカルのハミング候補を押し、音声がvocals.wav、位置8.16秒、ループON、再生停止のままであることをDOMと実音声要素で確認した。これはブラウザーハーネスのUI検証で、ネイティブ画面の操作検証ではない。
+
+`npm run check`成功（UI38、Python47、MCP統合1、Rust2、合計88件）。TypeScript/Vite、rustfmt/clippy成功。`npm run tauri:build -- --no-bundle`成功。ログはtest-results/yamnet-stage2-check.log、yamnet-framing-check.log、yamnet-real-songs.log、yamnet-native-build.log。モデル・実曲・比較JSONはGitに含めない。
