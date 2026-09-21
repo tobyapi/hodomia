@@ -49,10 +49,16 @@ class Control:
             artifacts = Artifacts(self.runtime)
             value['artifacts'] = [artifacts.register(root, Path(value['path']) / name, mime)
                                   for name, mime in [('analysis.json', 'application/json'), ('timeline.csv', 'text/csv'), ('lyrics.srt', 'text/plain')]]
+            comparison_csv = Path(value['path']) / 'vocal-comparison.csv'
+            if comparison_csv.is_file():
+                value['artifacts'].append(artifacts.register(root, comparison_csv, 'text/csv'))
             return value
         if operation == 'get_timeline':
             from timeline_api import get_timeline
             return get_timeline(self.root(args['root']), **{k: v for k, v in args.items() if k != 'root'})
+        if operation == 'get_vocal_comparison':
+            from vocal_comparison_api import get_comparison
+            return get_comparison(self.root(args['root']), **{k: v for k, v in args.items() if k != 'root'})
         if operation == 'update_segments':
             from timeline_api import update_segments
             return update_segments(self.root(args['root']), **{k: v for k, v in args.items() if k != 'root'})

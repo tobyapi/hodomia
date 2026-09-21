@@ -9,6 +9,7 @@ import { Timeline } from "./components/Timeline";
 import { Inspector } from "./components/Inspector";
 import { Player } from "./components/Player";
 import { ChordControls } from "./components/ChordControls";
+import { VocalComparison } from "./components/VocalComparison";
 
 const INITIAL_VISIBLE: Record<string, boolean> = { beats: true, sections: true, lyrics: true, words: false, vocalEvents: true, chords: true, key: false, energy: true, pitch: true, stems: false };
 
@@ -157,7 +158,7 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
       const root = await api.choose("project"); if (root) install(await api.openProject(root));
     }
   }
-  async function start(region?: AnalysisOptions["region"], scope?: "vocal-events" | "harmony") {
+  async function start(region?: AnalysisOptions["region"], scope?: AnalysisOptions["scope"]) {
     if (!snapshot) return;
     if (editor.dirty) await save();
     setMessage("解析を開始しています…");
@@ -241,6 +242,11 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
           <span>{snapshot.status.elapsed ? Math.round(snapshot.status.elapsed) + " 秒" : ""}</span><progress max={1} value={snapshot.status.progress ?? 0} /></div>
         <Timeline duration={duration} time={time} zoom={zoom} tracks={tracks} analysis={snapshot.result} visible={visible} selected={selectedId} onSeek={seek} onSelect={(t, row) => { setTrack(t); setSelectedId(row.id); }} />
         {track === "vocalEvents" && <p className="muted event-note">{snapshot.result.engines?.vocalEvents ? "検出結果は候補です。通常の歌唱や楽器との取り違え、短い息の見逃しがあります。" : "声の表現はまだ検出していません。「声の表現だけ検出」で追加できます。"} 歌詞と重なる候補も表示します。「あー」「うー」やスキャットは必要に応じて手動で分類してください。</p>}
+        {track === "vocalEvents" && <VocalComparison data={snapshot.result.vocalComparisons} duration={duration} time={time} zoom={zoom}
+          ready={!!runtime?.yamnetReady} locked={locked || !runtime?.ready}
+          onAnalyze={() => void guarded(() => start(undefined, "vocal-comparison"))}
+          onSetup={() => void guarded(async () => { await api.setupRuntime(false, true); setJob({ running: true, kind: "setup", log: "" }); previousRunning.current = true; setShowLog(true); })}
+          onAudition={(source, start, end) => { switchingAudio.current = source !== stem; audio.current?.pause(); setStem(source); setLoop({ start, end }); seek(start); }} />}
         <div className="editor-toolbar"><select aria-label="編集トラック" value={track} onChange={e => { setTrack(e.target.value as Track); setSelectedId(undefined); }}>{Object.entries(TRACK_NAMES).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select>
         <button disabled={viewAuto || busy} onClick={addRow}>＋ 再生位置に追加</button><label className="check-label"><input type="checkbox" checked={viewAuto} onChange={e => setViewAuto(e.target.checked)} />自動結果を比較</label>
         {editor.tracks[track] && <button disabled={busy} onClick={() => { const next = { ...editor.tracks }; delete next[track]; editor.change(next); setViewAuto(false); }}>このトラックを自動結果へ戻す</button>}<span className="muted">{rows.length} 項目</span></div>

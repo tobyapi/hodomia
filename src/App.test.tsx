@@ -349,3 +349,18 @@ test("cancel uses the job ID returned at start, before a subsequent status poll"
   fireEvent.click(await screen.findByRole("button", { name: "処理を中止" }));
   await waitFor(() => expect(api.cancelJob).toHaveBeenCalledWith("started-job"));
 });
+
+test("voice comparison sends its own scope and keeps the normal voice track", async () => {
+  vi.mocked(api.runtimeStatus).mockResolvedValue({ path: 'runtime', ready: true, yamnetReady: true });
+  const value = structuredClone(fixture);
+  value.edits.tracks.vocalEvents = [{ id: 'manual', start: 0, end: 1, label: '確認した音', category: 'beatbox', reviewed: true }];
+  vi.mocked(api.openProject).mockResolvedValue(value);
+  render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: 'プロジェクトを開く' }));
+  await screen.findByRole('heading', { name: 'テスト曲' });
+  fireEvent.change(screen.getByLabelText('編集トラック'), { target: { value: 'vocalEvents' } });
+  fireEvent.click(screen.getByRole('button', { name: 'AST / YAMNet を比較' }));
+  await waitFor(() => expect(api.analyze).toHaveBeenCalledWith(fixture.root, expect.objectContaining({ scope: 'vocal-comparison' })));
+  expect(screen.getByRole('button', { name: '確認した音' })).toBeVisible();
+  expect(api.saveEdits).not.toHaveBeenCalled();
+});

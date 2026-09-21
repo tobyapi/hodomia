@@ -18,7 +18,7 @@ const bridge: typeof api = {
   removeSavedProject: async () => { hidden = true; },
   deleteAnalysis: async () => { value.project.currentRun = null; value.result = {}; value.edits = { revision: value.edits.revision + 1, tracks: {} }; return structuredClone(value); },
   asset: (_root, path) => "/test-results/ui-media/" + (path === "audio.wav" ? "original.wav" : path.split("/").pop()),
-  runtimeStatus: async () => ({ path: "UI検証用。保存はメモリー内のみ。", ready: true, chordMiniReady: true }),
+  runtimeStatus: async () => ({ path: "UI検証用。保存はメモリー内のみ。", ready: true, chordMiniReady: true, yamnetReady: true }),
   jobStatus: async () => ({ running: false, kind: null, log: "ブラウザーUIハーネス。実際の分析はデスクトップで実行します。" }),
   choose: async () => value.root,
   openProject: async () => structuredClone(value),

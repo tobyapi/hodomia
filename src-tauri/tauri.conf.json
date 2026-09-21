@@ -34,7 +34,7 @@
       "icons/icon.ico"
     ],
     "category": "Music",
-    "resources": { "../analysis/": "analysis/", "../scripts/setup-analysis.ps1": "scripts/setup-analysis.ps1", "../scripts/setup-chordmini.ps1": "scripts/setup-chordmini.ps1", "../scripts/runtime-lock.ps1": "scripts/runtime-lock.ps1" },
+    "resources": { "../analysis/": "analysis/", "../scripts/setup-analysis.ps1": "scripts/setup-analysis.ps1", "../scripts/setup-chordmini.ps1": "scripts/setup-chordmini.ps1", "../scripts/setup-yamnet.ps1": "scripts/setup-yamnet.ps1", "../scripts/runtime-lock.ps1": "scripts/runtime-lock.ps1" },
     "windows": {
       "nsis": {
         "installMode": "currentUser",

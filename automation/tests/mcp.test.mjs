@@ -23,6 +23,7 @@ test('real stdio MCP: import, bounded reads, CAS edits, clips, exports and permi
   try {
     await client.connect(transport);
     assert.ok((await client.listTools()).tools.some(t => t.name === 'update_segments'));
+    assert.ok((await client.listTools()).tools.some(t => t.name === 'get_vocal_comparison'));
     const call = async (name, args = {}) => {
       const result = await client.callTool({ name, arguments: args });
       assert.equal(result.isError, false, JSON.stringify(result));
@@ -32,6 +33,8 @@ test('real stdio MCP: import, bounded reads, CAS edits, clips, exports and permi
     const root = imported.root;
     assert.equal((await call('list_projects')).projects.length, 1);
     assert.equal((await call('get_project', { root })).revision, 0);
+    const missingComparison = await client.callTool({ name: 'get_vocal_comparison', arguments: { root } });
+    assert.equal(missingComparison.structuredContent.error.code, 'NOT_FOUND');
     const display = await call('show_in_app', { root, start: 0.1, end: 0.4, track: 'lyrics' });
     assert.equal((await call('get_ui_request', { requestId: display.requestId })).state, 'queued');
     const request = { root, expectedRevision: 0, expectedRunId: null, requestId: 'mcp-edit',

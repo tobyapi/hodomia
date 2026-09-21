@@ -209,6 +209,19 @@ def _export(root):
     rows = sorted((r for r in tracks.get('lyrics', []) if r.get('start') is not None and r.get('end') is not None), key=lambda r: r['start'])
     text = '\n\n'.join(f"{i}\n{srt_time(r['start'])} --> {srt_time(r['end'])}\n{r['label']}" for i, r in enumerate(rows, 1))
     (out / 'lyrics.srt').write_text(text + '\n', encoding='utf-8')
+    comparison = value['result'].get('vocalComparisons')
+    if comparison:
+        with (out / 'vocal-comparison.csv').open('w', encoding='utf-8-sig', newline='') as stream:
+            writer = csv.writer(stream)
+            classes = ['Beatboxing', 'Humming', 'Breathing', 'Gasp', 'Pant', 'Sigh']
+            writer.writerow(['model', 'source', 'window_start', 'window_end', 'beatbox', 'breath', 'humming', *classes])
+            for variant in comparison['variants']:
+                model, source = (str(variant[key]) for key in ('model', 'source'))
+                model, source = ("'" + s if s.startswith(('=', '+', '-', '@')) else s for s in (model, source))
+                for frame in variant['frames']:
+                    writer.writerow([model, source, frame['start'], frame['end'],
+                                     *[frame['scores'][key] for key in ('beatbox', 'breath', 'humming')],
+                                     *[frame['classScores'][key] for key in classes]])
     return {'path': str(out), 'untimedLyrics': sum(r.get('start') is None for r in tracks.get('lyrics', []))}
 
 

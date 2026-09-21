@@ -23,3 +23,6 @@ MCPはautomation/mcp-server.mjs → worker-client.mjs → headless.py。公式SD
 - `analysis/vocal_percussion.py`: 高感度の打撃音候補生成。意味分類や校正済み確率を返さず、声の分類結果と区別する。コード推定はBTCへ統一し、dspは伴奏からキーだけを推定する。
 - `analysis/chordmini.py`: 学習済みコード推定のプロセス境界。インストール検証、取消、.lab検証、来歴保存を担当。`chordmini_runner.py`は分離venv内で固定した公式前処理・推論を呼び、厳密な重み読込と通信禁止を強制する。`chordmini_install.py`とsetup-chordmini.ps1が初回準備を担当する。
 - `components/ChordControls.tsx`: BTC固定の再推定操作と旧解析結果の案内。方式選択はなく、pipelineは新しいコード解析でchordComparisonsを生成しない。旧runsと手修正は保持し、コード解析に失敗しても従来方式へフォールバックしない。
+
+- `vocal_labels.py`: ASTとYAMNetの共通AudioSetクラス定義。`vocal_comparison.py`: モデル・音声ごとの証拠を比較用runに保存し、分類窓から候補を作る。`yamnet.py` / `yamnet_runner.py`: 固定した公式SavedModelを別のTensorFlow環境でオフライン推論する。`yamnet_install.py`とsetup-yamnet.ps1のみオンライン取得する。
+- `vocal_comparison_api.py`: 保存した比較の範囲・ページ取得。`components/VocalComparison.tsx`: 読み取り専用の比較グラフと、音声・区間ループの切り替え。モデル結果を通常トラックや手修正へ自動適用しない。

@@ -75,3 +75,5 @@ AIによる保存済みの変更は、未保存の作業がなければGUIへ反
 範囲取得と書き出しも解析中はBUSYになります。結果をページングする場合は解析の完了を待ち、revision/runIdを渡してください。中断された過去の解析はget_jobでinterrupted、過去の完了ジョブはそのジョブ固有のrunIdと進捗を返します。
 
 実モデルを含む検証は `node scripts/verify-automation.mjs <検証用プロジェクトフォルダー> ...`。指定したプロジェクトにBTCの新しいrunを作り、MCP経由の完了追跡、コード取得、音源・手修正・対象外トラックの保持を確認します。通常の `npm run check` はモデル推論を実行しません。
+
+声の比較は `start_analysis` のscope=vocal-comparisonで実行し、`get_vocal_comparison` で範囲取得できます。[AST / YAMNet比較](vocal-comparison.md)を参照してください。検証スクリプトは `--scope vocal-comparison` を先頭に指定すると両モデルの実行と既存結果の保持を確認します。

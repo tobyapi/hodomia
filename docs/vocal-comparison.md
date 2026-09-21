@@ -11,3 +11,17 @@ ASTの候補は従来と同じしきい値（標準0.15、候補多め0.06）。
 既存のビートボックス打撃音の補助検出はモデル分類とは分け、比較用ASTには加えない。通常の声の表現トラックと手修正を置き換えない。比較結果は新しいrunの `vocal-comparison.json` とresult.jsonのvocalComparisonsへ保存し、JSON書き出しにも含む。原曲、歌詞、コード、拍、手修正は変更しない。
 
 専用環境で `python scripts/verify-yamnet.py` を実行すると、短い音声と分割境界を含む音声について、分割推論と公式モデルの一括推論の一致を確認できる。通常のcheckはモデルなしの区間化・出力検証を実行する。
+
+## 画面で使う
+
+曲を開き、編集トラックを「声の表現」にする。「YAMNetをセットアップ」が表示されるPCでは一度セットアップし、「AST / YAMNet を比較」を押す。比較が終わると、声の種類ごとに原曲と分離ボーカルのスコア・候補帯を並べる。候補帯や一覧を押すと、音声を切り替えて区間ループを設定する。自動再生はしないのでプレイヤーの再生ボタンで試聴する。
+
+横軸は秒、縦軸は0～1。線は各分類窓の中心にスコアを描いたもので、瞬間ごとの確率ではない。窓の範囲と生スコアはマウスを合わせて確認する。ブレスでは4クラスの個別スコアも表示する。通常の声トラックや保存済み手修正を比較候補で自動上書きしない。
+
+「書き出し」で比較を含むJSONと、各モデル・各音声の窓ごとのスコアを収録したvocal-comparison.csvを出力する。SRTには従来どおり歌詞だけを含める。
+
+## CLI / MCP
+
+`start_analysis` に `options: {mode: "japanese", scope: "vocal-comparison"}` を渡す。YAMNet未準備ならMODEL_NOT_READY。比較中も通常の永続ジョブとして進捗取得・中止できる。
+
+`get_vocal_comparison` はrootだけならモデル・音声別の件数、最大スコア、設定、モデル来歴を返す。variantId（例yamnet-vocals）を渡すとkind=framesまたはcandidatesを取得できる。start/end、category（beatbox/breath/humming）、offset/limit（最大500件）、expectedRunIdに対応。過去の比較を他の部分解析が保持した場合も、比較元のrunIdを返す。取得と書き出しは解析中BUSYとなる。
