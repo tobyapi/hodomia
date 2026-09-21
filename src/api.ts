@@ -1,5 +1,5 @@
 import { convertFileSrc, invoke, isTauri } from "@tauri-apps/api/core";
-import type { AnalysisOptions, Edits, Job, RuntimeStatus, Snapshot, SavedProject } from "./types";
+import type { AnalysisOptions, Edits, Job, RuntimeStatus, Snapshot, SavedProject, UiRequest } from "./types";
 
 export const desktop = () => isTauri();
 export const savedProjects = () => invoke<SavedProject[]>("saved_projects");
@@ -14,9 +14,11 @@ export const choose = (kind: "source" | "folder" | "project" | "lyrics") => invo
 export const runtimeStatus = () => invoke<RuntimeStatus>("runtime_status");
 export const jobStatus = () => invoke<Job>("job_status");
 export const setupRuntime = (chordMini = false) => invoke<void>("setup_runtime", { chordMini });
-export const cancelJob = () => invoke<void>("cancel_job");
+export const cancelJob = (jobId?: string) => invoke<void>("cancel_job", { jobId });
+export const nextUiRequest = () => invoke<UiRequest | null>("next_ui_request");
+export const ackUiRequest = (requestId: string, state: "applied" | "failed", message?: string) => invoke<UiRequest>("ack_ui_request", { requestId, state, message });
 export const readLyrics = (path: string) => invoke<string>("read_lyrics", { path });
-export const analyze = (root: string, options: AnalysisOptions) => invoke<void>("start_analysis", { root, options });
+export const analyze = (root: string, options: AnalysisOptions) => invoke<{ jobId: string }>("start_analysis", { root, options });
 const operation = <T,>(operation: string, args: object) => invoke<T>("workspace_operation", { operation, args });
 export const createProject = (source: string) => operation<Snapshot>("create", { source });
 export const openProject = (root: string) => operation<Snapshot>("snapshot", { root });

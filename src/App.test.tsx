@@ -5,6 +5,7 @@ import * as api from "./api";
 import type { Snapshot } from "./types";
 vi.mock("./api", () => ({
   savedProjects: vi.fn(),
+  nextUiRequest: vi.fn(), ackUiRequest: vi.fn(),
   removeSavedProject: vi.fn(), deleteAnalysis: vi.fn(),
   desktop: vi.fn(() => true), runtimeStatus: vi.fn(), jobStatus: vi.fn(), choose: vi.fn(),
   openProject: vi.fn(), createProject: vi.fn(), saveEdits: vi.fn(), exportProject: vi.fn(),
@@ -18,6 +19,7 @@ const fixture: Snapshot = {
   status: { state: "complete", stage: "解析完了", progress: 1, errors: [] },
 };
 beforeEach(() => {
+  vi.mocked(api.nextUiRequest).mockResolvedValue(null);
   vi.mocked(api.removeSavedProject).mockResolvedValue(undefined);
   vi.mocked(api.deleteAnalysis).mockResolvedValue(structuredClone(fixture));
   vi.mocked(api.savedProjects).mockResolvedValue([]);
@@ -32,7 +34,7 @@ beforeEach(() => {
   vi.mocked(api.choose).mockResolvedValue("D:/test");
   vi.mocked(api.openProject).mockResolvedValue(structuredClone(fixture));
   vi.mocked(api.saveEdits).mockImplementation(async (_root, edits) => ({ ...edits, revision: edits.revision + 1 }));
-  vi.mocked(api.analyze).mockResolvedValue(undefined);
+  vi.mocked(api.analyze).mockResolvedValue({ jobId: "started-job" });
   vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
 });
 test("browser preview is explicit and cannot invoke native file selection", () => {
@@ -283,4 +285,67 @@ test("chords can be refreshed without re-running lyrics or voice detection", asy
   fireEvent.change(screen.getByLabelText("編集トラック"), { target: { value: "chords" } });
   fireEvent.click(screen.getByRole("button", { name: "コード・キーだけ再推定" }));
   await waitFor(() => expect(api.analyze).toHaveBeenCalledWith(fixture.root, expect.objectContaining({ scope: "harmony" })));
+});
+
+test("external edits refresh a clean workspace", async () => {
+  render(<App />);
+  fireEvent.click(screen.getByRole("button", { name: "プロジェクトを開く" }));
+  await screen.findByRole("heading", { name: "テスト曲" });
+  const changed = structuredClone(fixture);
+  changed.edits = { revision: 1, tracks: { sections: [{ id: "s1", start: 10, end: 20, label: "AIの修正" }] } };
+  vi.mocked(api.openProject).mockResolvedValue(changed);
+  expect(await screen.findByRole("button", { name: "AIの修正" }, { timeout: 4000 })).toBeVisible();
+  expect(api.saveEdits).not.toHaveBeenCalled();
+});
+
+test("external edits preserve unsaved changes and the old CAS revision", async () => {
+  render(<App />);
+  fireEvent.click(screen.getByRole("button", { name: "プロジェクトを開く" }));
+  await screen.findByRole("heading", { name: "テスト曲" });
+  fireEvent.click(screen.getByRole("button", { name: "サビ" }));
+  fireEvent.change(screen.getByLabelText("内容"), { target: { value: "手元の修正" } });
+  fireEvent.click(screen.getByRole("button", { name: "変更を適用" }));
+  const changed = structuredClone(fixture); changed.edits.revision = 1;
+  vi.mocked(api.openProject).mockResolvedValue(changed);
+  await screen.findByRole("button", { name: "最新の保存内容を読み込む" }, { timeout: 4000 });
+  expect(screen.getByLabelText("内容")).toHaveValue("手元の修正");
+  fireEvent.click(screen.getByRole("button", { name: /修正を保存/ }));
+  await waitFor(() => expect(api.saveEdits).toHaveBeenCalledWith(fixture.root, expect.objectContaining({ revision: 0 })));
+});
+
+test("external edits preserve an inspector draft before apply", async () => {
+  render(<App />);
+  fireEvent.click(screen.getByRole("button", { name: "プロジェクトを開く" }));
+  await screen.findByRole("heading", { name: "テスト曲" });
+  fireEvent.click(screen.getByRole("button", { name: "サビ" }));
+  fireEvent.change(screen.getByLabelText("内容"), { target: { value: "入力中" } });
+  const changed = structuredClone(fixture); changed.edits.revision = 2;
+  vi.mocked(api.openProject).mockResolvedValue(changed);
+  await screen.findByRole("button", { name: "最新の保存内容を読み込む" }, { timeout: 4000 });
+  expect(screen.getByLabelText("内容")).toHaveValue("入力中");
+});
+
+test("queued display opens the requested track and time without autoplay", async () => {
+  const request = { requestId: "display", root: fixture.root, start: 12, end: 18, track: "chords" as const, stem: "original", state: "queued" };
+  vi.mocked(api.nextUiRequest).mockResolvedValueOnce(request);
+  vi.mocked(api.ackUiRequest).mockResolvedValue({ ...request, state: "applied" });
+  const { container } = render(<App />);
+  await waitFor(() => expect(api.ackUiRequest).toHaveBeenCalledWith("display", "applied"));
+  expect(screen.getByLabelText("編集トラック")).toHaveValue("chords");
+  fireEvent.loadedMetadata(container.querySelector("audio")!);
+  expect(container.querySelector("audio")?.currentTime).toBe(12);
+  expect(container.querySelector("audio")?.paused).toBe(true);
+});
+
+test("cancel uses the job ID returned at start, before a subsequent status poll", async () => {
+  vi.mocked(api.analyze).mockImplementation(async () => {
+    vi.mocked(api.jobStatus).mockResolvedValue({ running: true, kind: "analysis", log: "", jobId: "started-job" });
+    return { jobId: "started-job" };
+  });
+  render(<App />);
+  fireEvent.click(screen.getByRole("button", { name: "プロジェクトを開く" }));
+  await screen.findByRole("heading", { name: "テスト曲" });
+  fireEvent.click(screen.getByRole("button", { name: "全体を再分析" }));
+  fireEvent.click(await screen.findByRole("button", { name: "処理を中止" }));
+  await waitFor(() => expect(api.cancelJob).toHaveBeenCalledWith("started-job"));
 });

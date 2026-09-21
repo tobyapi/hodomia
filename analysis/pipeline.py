@@ -19,7 +19,7 @@ class Cancelled(Exception):
 
 
 @analysis_operation
-def run(root, runtime, options, cancel_path=None):
+def run(root, runtime, options, cancel_path=None, on_run=None):
     root, runtime = Path(root), Path(runtime)
     project = manifest(root)
     validate_options(options, project['duration'])
@@ -47,6 +47,8 @@ def run(root, runtime, options, cancel_path=None):
         if not (events_only or harmony_only) or 'mode' not in result:
             result['mode'] = options['mode']
         result['sourceHash'] = project['source']['sha256']
+        if on_run is not None:
+            on_run(run_id)
     started, errors = time.monotonic(), []
     status = {'state': 'running', 'stage': '準備', 'progress': 0, 'errors': errors}
 

@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { timeLabel, validRow } from "../editing";
 import type { TimelineRow, Track, VocalCategory } from "../types";
 import { TRACK_NAMES, VOCAL_CATEGORIES, STEM_NAMES } from "../types";
 
-export function Inspector({ track, row, duration, onSave, onDelete, onLoop, onRegion }: {
+export function Inspector({ track, row, duration, onSave, onDelete, onLoop, onRegion, onDirtyChange }: {
   track: Track; row: TimelineRow; duration: number; onSave: (row: TimelineRow) => void;
   onDelete: () => void; onLoop: () => void; onRegion: (language: "ja" | "en") => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [label, setLabel] = useState(row.label);
   const [category, setCategory] = useState<VocalCategory>(row.category ?? "other");
@@ -13,6 +14,8 @@ export function Inspector({ track, row, duration, onSave, onDelete, onLoop, onRe
   const [end, setEnd] = useState(row.end?.toString() ?? "");
   const [reviewed, setReviewed] = useState(row.reviewed ?? false);
   const [error, setError] = useState("");
+  const dirty = label !== row.label || category !== (row.category ?? "other") || start !== (row.start?.toString() ?? "") || end !== (row.end?.toString() ?? "") || reviewed !== (row.reviewed ?? false);
+  useEffect(() => { onDirtyChange?.(dirty); return () => onDirtyChange?.(false); }, [dirty, onDirtyChange]);
   const save = () => {
     const value = { ...row, label, start: start === "" ? null : Number(start), end: end === "" ? null : Number(end), reviewed, ...(track === "vocalEvents" ? { category } : {}) };
     const problem = validRow(value, track, duration);

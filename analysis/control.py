@@ -1,5 +1,4 @@
 """Application operations consumed by headless and MCP adapters, without GUI imports."""
-import os
 from pathlib import Path
 from control_errors import ControlError
 from jobs import Jobs
@@ -67,6 +66,14 @@ class Control:
         if operation == 'read_artifact':
             from artifacts import Artifacts
             return Artifacts(self.runtime).read(args['artifactId'], self.root)
+        if operation == 'show_in_app':
+            from ui_requests import UiRequests
+            return UiRequests(self.runtime).enqueue(self.root(args['root']), **{k: v for k, v in args.items() if k != 'root'})
+        if operation == 'get_ui_request':
+            from ui_requests import UiRequests
+            value = UiRequests(self.runtime).get(args['requestId'])
+            self.root(value['root'])
+            return value
         raise ControlError('UNKNOWN_OPERATION', '不明な操作です: ' + str(operation))
 
     def summary(self, root):

@@ -14,6 +14,8 @@ const options = z.strictObject({
 });
 
 export const definitions = [
+  ['show_in_app', 'Queue a song/time range for display in Music Sweeper. Open the desktop app to receive it. No auto-play. Unsaved GUI edits defer it. Expires after 10 minutes; use get_ui_request to confirm applied status.', { root, start: seconds.optional(), end: seconds.optional(), stem: z.string().optional(), track: track.optional() }, false],
+  ['get_ui_request', 'Check whether show_in_app was applied, remains queued, failed or expired.', { requestId: z.string() }, true],
   ['list_projects', 'List saved songs. No audio or complete timeline is returned.', {}, true],
   ['import_audio', 'Copy an allowed local MP3/MP4/M4A/WAV/FLAC into a new project. Source is preserved. No analysis starts.', { source: z.string().min(1) }, false],
   ['get_project', 'Read summary, currentRun, edit revision, track counts and analysis provenance.', { root }, true],

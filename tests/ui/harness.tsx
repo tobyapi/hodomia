@@ -11,6 +11,8 @@ const value: Snapshot = await response.json();
 let hidden = false;
 const bridge: typeof api = {
   ...api,
+  nextUiRequest: async () => null,
+  ackUiRequest: async () => { throw new Error("表示要求はありません。"); },
   desktop: () => true,
   savedProjects: async () => hidden ? [] : [{ root: value.root, name: value.project.name, duration: value.project.duration, createdAt: null, hasAnalysis: !!value.project.currentRun }],
   removeSavedProject: async () => { hidden = true; },

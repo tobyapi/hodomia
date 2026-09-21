@@ -185,6 +185,11 @@ def srt_time(seconds):
 
 
 def export(root):
+    with file_lock(Path(root) / '.analysis.lock'), file_lock(Path(root) / '.write.lock'):
+        return _export(root)
+
+
+def _export(root):
     value = snapshot(root)
     tracks = effective_tracks(value)
     out = Path(root) / 'exports' / (datetime.now().strftime('%Y%m%d-%H%M%S') + '-' + uuid.uuid4().hex[:6])

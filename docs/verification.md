@@ -140,3 +140,15 @@ src/api.tsのassetで、Windows形式のパスだけ区切りをバックスラ�
 初回セットアップにBTCを含め、既存環境で未準備の場合はコード・全体分析を無効にして専用セットアップを案内する。声の分類だけの解析は引き続き実行可能。BTCが失敗しても別方式へ置き換えない。
 
 「検証曲A」「検証曲B」の参照プロジェクトで方式指定なしのコード再解析を実行し、従来のBTC出力と完全一致（91区間/36区間）。キー・歌詞・拍・声の分類・手修正が不変、旧runファイルのバイト列が不変であることをassertで確認。npm run check成功（UI30、Python29、Rust2）。
+
+## ヘッドレス・MCP・GUI連携（2026-09-21）
+
+`npm run check`成功: UI35件、Python42件、公式MCP SDKを使ったプロセス間統合1件、Rust2件（計80件）。TypeScript/Vite、rustfmt、clippyも成功。`npm run tauri:build -- --no-bundle`でWindows実行ファイルを更新。
+
+検証対象は許可範囲、JSONエラー、永続ジョブ、プロセス間の保存ロック、リビジョン競合、編集の再送・途中失敗からの再試行、音声クリップ、MCPリソース、外部変更とGUIの未保存修正・未適用入力の保護。PowerShellのセットアップとPython解析のロック競合も実プロセスで確認した。
+
+`scripts/verify-automation.mjs`を使い、許可済み2曲の参照プロジェクトでMCPからBTCのharmonyジョブを起動。両方completeまで追跡でき、検証曲A91区間、検証曲B36区間を取得。元音源コピー・再生用音声のSHA-256、手修正、コードとキー以外のトラックが保持されることをassertで確認。歌詞・分離・声分類のモデルを全て再実行する試験ではない。
+
+更新した実際のWindowsアプリを起動し、ヘッドレスAPIから保存済み「検証曲A」の12〜18秒・声の表現トラックを指定。約2秒でGUIからapplied応答を確認した。音源・解析結果は変更していない。自動再生はしない。表示操作のネイティブIPC経路の確認であり、目視によるレイアウト評価ではない。
+
+ローカル検証ログ: test-results/gui-stage4-check.log、test-results/mcp-real-songs.log、test-results/automation-native-build.log、test-results/native-display-verification.json。音源や実曲結果・ローカルMCP設定はGitに含めない。

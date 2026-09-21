@@ -28,7 +28,9 @@ fn app_builder<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<
             workspace::setup_runtime,
             workspace::read_lyrics,
             workspace::saved_projects,
-            workspace::remove_saved_project
+            workspace::remove_saved_project,
+            workspace::next_ui_request,
+            workspace::ack_ui_request
         ])
 }
 

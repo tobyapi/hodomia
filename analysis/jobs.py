@@ -10,9 +10,15 @@ from pathlib import Path
 from control_errors import BusyError, ControlError
 from locking import file_lock
 from process_identity import process_identity
-from storage import manifest, read_json, snapshot, write_json
+from storage import manifest, read_json, write_json
 
 ACTIVE = ('queued', 'running', 'cancelling')
+
+
+def abandoned(value):
+    return value['state'] in ACTIVE and (
+        (value.get('pid') and process_identity(value['pid']) != value.get('processIdentity')) or
+        (not value.get('pid') and time.time() - value['createdAt'] > 60))
 
 
 class Jobs:
@@ -35,13 +41,10 @@ class Jobs:
         if not path.is_file():
             raise ControlError('NOT_FOUND', 'ジョブがありません。')
         value = read_json(path)
-        abandoned = value['state'] in ACTIVE and (
-            (value.get('pid') and process_identity(value['pid']) != value.get('processIdentity')) or
-            (not value.get('pid') and time.time() - value['createdAt'] > 60))
-        if abandoned:
+        if abandoned(value):
             with file_lock(path.with_suffix('.lock')):
                 value = read_json(path)
-                if value['state'] in ACTIVE:
+                if abandoned(value):
                     value.update(state='interrupted', finishedAt=time.time(), error='解析プロセスが終了しました。再解析できます。')
                     write_json(path, value)
         public = {key: value.get(key) for key in ('jobId', 'root', 'state', 'createdAt', 'startedAt', 'finishedAt', 'runId', 'error')}
@@ -50,10 +53,8 @@ class Jobs:
         if public['running'] and public['cancelRequested']:
             public['state'] = 'cancelling'
         try:
-            current = snapshot(value['root'])
-            if current['project']['currentRun'] != value['previousRun']:
-                public['runId'] = current['project']['currentRun']
-                public['progress'] = current['status']
+            if value.get('runId'):
+                public['progress'] = read_json(Path(value['root']) / 'runs' / value['runId'] / 'status.json')
         except (OSError, ValueError):
             pass
         if include_log:
@@ -127,9 +128,13 @@ class Jobs:
                 value['state'] = 'cancelled'
             else:
                 from pipeline import run
-                run(value['root'], self.runtime, value['options'], cancel_path=self.cancel_path(job_id))
-                result = snapshot(value['root'])
-                value.update(state=result['status']['state'], runId=result['project']['currentRun'])
+                def record_run(run_id):
+                    value['runId'] = run_id
+                    with file_lock(path.with_suffix('.lock')):
+                        write_json(path, value)
+                run(value['root'], self.runtime, value['options'], cancel_path=self.cancel_path(job_id), on_run=record_run)
+                status = read_json(Path(value['root']) / 'runs' / value['runId'] / 'status.json')
+                value['state'] = status['state']
         except Exception as error:
             traceback.print_exc()
             value.update(state='failed', error=str(error))

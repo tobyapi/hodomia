@@ -5,7 +5,7 @@ import path from 'node:path';
 export const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 export function configuration(args = process.argv.slice(2)) {
-  const values = { runtime: process.env.MUSIC_SWEEPER_RUNTIME ?? path.join(repository, '.runtime'), allowedRoots: [] };
+  const values = { runtime: path.resolve(process.env.MUSIC_SWEEPER_RUNTIME ?? path.join(repository, '.runtime')), allowedRoots: [] };
   const flags = { '--runtime': 'runtime', '--projects': 'projects', '--registry': 'registry', '--allow-root': 'allowedRoots' };
   for (let i = 0; i < args.length; i += 2) {
     const key = flags[args[i]];

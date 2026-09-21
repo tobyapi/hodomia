@@ -16,8 +16,9 @@ test('real stdio MCP: import, bounded reads, CAS edits, clips, exports and permi
   wav.write('data', 36); wav.writeUInt32LE(32000, 40);
   const source = path.join(folder, 'input.wav'); await writeFile(source, wav);
   const transport = new StdioClientTransport({ command: process.execPath, args: [path.join(repository, 'automation/mcp-server.mjs'),
-    '--runtime', path.join(repository, '.runtime'), '--projects', path.join(folder, 'projects'),
-    '--registry', path.join(folder, 'registry'), '--allow-root', folder], stderr: 'pipe' });
+    '--runtime', path.join(folder, 'runtime'), '--projects', path.join(folder, 'projects'),
+    '--registry', path.join(folder, 'registry'), '--allow-root', folder], stderr: 'pipe',
+    env: { ...process.env, MUSIC_SWEEPER_PYTHON: process.env.MUSIC_SWEEPER_PYTHON ?? path.join(repository, '.runtime/venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python') } });
   const client = new Client({ name: 'integration-test', version: '1.0.0' });
   try {
     await client.connect(transport);
@@ -31,6 +32,8 @@ test('real stdio MCP: import, bounded reads, CAS edits, clips, exports and permi
     const root = imported.root;
     assert.equal((await call('list_projects')).projects.length, 1);
     assert.equal((await call('get_project', { root })).revision, 0);
+    const display = await call('show_in_app', { root, start: 0.1, end: 0.4, track: 'lyrics' });
+    assert.equal((await call('get_ui_request', { requestId: display.requestId })).state, 'queued');
     const request = { root, expectedRevision: 0, expectedRunId: null, requestId: 'mcp-edit',
       operations: [{ op: 'add', track: 'lyrics', changes: { start: 0.1, end: 0.8, label: 'テスト', reviewed: true } }] };
     const result = await call('update_segments', request);

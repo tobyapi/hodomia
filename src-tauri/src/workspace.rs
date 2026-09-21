@@ -358,35 +358,16 @@ pub fn start_analysis<R: tauri::Runtime>(
     root: String,
     options: Value,
     state: State<Workspace>,
-) -> Result<(), String> {
+) -> Result<Value, String> {
     let root = approved(&state, &root)?;
     let mut job = state.job.lock().map_err(|e| e.to_string())?;
     assert_idle(&mut job)?;
-    let cancel = root.join("cancel.flag");
-    if cancel.exists() {
-        fs::remove_file(cancel).map_err(|e| e.to_string())?;
-    }
-    let log_path = root.join("analysis.log");
-    let log = fs::File::create(&log_path).map_err(|e| e.to_string())?;
-    let mut child = worker(&app)?
-        .stdout(log.try_clone().map_err(|e| e.to_string())?)
-        .stderr(log)
-        .spawn()
-        .map_err(|e| e.to_string())?;
-    let request = json!({"operation": "analyze", "args": {"root": root, "options": options}});
-    child
-        .stdin
-        .take()
-        .ok_or("stdin unavailable")?
-        .write_all(request.to_string().as_bytes())
-        .map_err(|e| e.to_string())?;
-    *job = Some(Job {
-        child,
-        root: Some(root),
-        log: log_path,
-        kind: "analysis",
-    });
-    Ok(())
+    let started = call_worker(
+        &app,
+        json!({"operation": "start_job", "args": {"root": root, "options": options}}),
+    )?;
+    *job = None;
+    Ok(started)
 }
 
 #[tauri::command]
@@ -420,6 +401,11 @@ pub fn setup_runtime<R: tauri::Runtime>(
     assert_idle(&mut job)?;
     let runtime = runtime_root(&app)?;
     fs::create_dir_all(&runtime).map_err(|e| e.to_string())?;
+    if runtime.join("venv/Scripts/python.exe").exists()
+        && call_worker(&app, json!({"operation": "latest_job"}))?["running"] == true
+    {
+        return Err("解析中です。完了または中止後にセットアップしてください。".into());
+    }
     let log_path = runtime.join("setup.log");
     let log = fs::File::create(&log_path).map_err(|e| e.to_string())?;
     let script = if chord_mini.unwrap_or(false) {
@@ -450,11 +436,14 @@ pub fn setup_runtime<R: tauri::Runtime>(
 }
 
 #[tauri::command]
-pub fn job_status(state: State<Workspace>) -> Result<Value, String> {
+pub fn job_status<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    state: State<Workspace>,
+) -> Result<Value, String> {
     let mut job = state.job.lock().map_err(|e| e.to_string())?;
-    if let Some(job) = job.as_mut() {
-        let exit = job.child.try_wait().map_err(|e| e.to_string())?;
-        let text = fs::read_to_string(&job.log).unwrap_or_default();
+    if let Some(active) = job.as_mut() {
+        let exit = active.child.try_wait().map_err(|e| e.to_string())?;
+        let text = fs::read_to_string(&active.log).unwrap_or_default();
         let tail: String = text
             .chars()
             .rev()
@@ -463,21 +452,74 @@ pub fn job_status(state: State<Workspace>) -> Result<Value, String> {
             .chars()
             .rev()
             .collect();
-        Ok(
-            json!({"running": exit.is_none(), "success": exit.map(|s| s.success()), "kind": job.kind, "log": tail}),
-        )
+        let result = Ok(
+            json!({"running": exit.is_none(), "success": exit.map(|s| s.success()), "kind": active.kind, "log": tail}),
+        );
+        if exit.is_some() {
+            *job = None;
+        }
+        result
     } else {
-        Ok(json!({"running": false, "kind": null, "log": ""}))
+        if !runtime_root(&app)?.join("venv/Scripts/python.exe").exists() {
+            return Ok(json!({"running": false, "kind": null, "log": ""}));
+        }
+        call_worker(&app, json!({"operation": "latest_job"}))
     }
 }
 
 #[tauri::command]
-pub fn cancel_job(state: State<Workspace>) -> Result<(), String> {
+pub fn cancel_job<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    state: State<Workspace>,
+    job_id: Option<String>,
+) -> Result<(), String> {
     let mut job = state.job.lock().map_err(|e| e.to_string())?;
     if let Some(job) = job.as_mut() {
         stop_job(job)?;
+    } else if let Some(job_id) = job_id {
+        call_worker(
+            &app,
+            json!({"operation": "cancel_job", "args": {"jobId": job_id}}),
+        )?;
     }
     Ok(())
+}
+
+#[tauri::command]
+pub async fn next_ui_request<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        if !runtime_root(&app)?.join("venv/Scripts/python.exe").exists() {
+            return Ok(Value::Null);
+        }
+        let request = call_worker(&app, json!({"operation": "next_ui_request"}))?;
+        if let Some(root) = request["root"].as_str() {
+            let state = app.state::<Workspace>();
+            grant(&app, &state, Path::new(root))?;
+        }
+        Ok(request)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn ack_ui_request<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    request_id: String,
+    state: String,
+    message: Option<String>,
+) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let result = call_worker(&app, json!({"operation": "ack_ui_request", "args": {"requestId": request_id, "state": state, "message": message}}))?;
+        if result["state"] == "applied" {
+            if let Some(window) = app.get_webview_window("main") {
+                window.unminimize().map_err(|e| e.to_string())?;
+                window.show().map_err(|e| e.to_string())?;
+                window.set_focus().map_err(|e| e.to_string())?;
+            }
+        }
+        Ok(result)
+    }).await.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]

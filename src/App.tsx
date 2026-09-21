@@ -39,6 +39,8 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
   const [meter, setMeter] = useState("4");
   const [showLog, setShowLog] = useState(false);
   const [viewAuto, setViewAuto] = useState(false);
+  const [draftDirty, setDraftDirty] = useState(false);
+  const [externalChange, setExternalChange] = useState(false);
   const editor = useEdits();
   const audio = useRef<HTMLAudioElement>(null);
   const currentTime = useRef(0);
@@ -76,9 +78,21 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
         const next = await api.jobStatus();
         if (!alive) return;
         setJob(next);
-        if (snapshot && (next.running || previousRunning.current)) {
+        if (!busy) {
+          const projects = await api.savedProjects();
+          if (!alive) return;
+          setSavedProjects(projects);
+        }
+        if (snapshot && !busy) {
           const value = await api.openProject(snapshot.root);
-          if (alive) setSnapshot(value);
+          if (!alive) return;
+          if (value.edits.revision !== snapshot.edits.revision && (editor.dirty || draftDirty)) {
+            setExternalChange(true);
+          } else if (!draftDirty) {
+            if (value.edits.revision !== snapshot.edits.revision) editor.reset(value.edits.tracks);
+            setExternalChange(false);
+            setSnapshot(value);
+          }
         }
         if (previousRunning.current && !next.running) {
           const info = await api.runtimeStatus();
@@ -86,12 +100,30 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
           if (next.success === false && alive) setError("処理が終了しました。ログと解析状態を確認してください。");
         }
         previousRunning.current = next.running;
+        if (!busy && !editor.dirty && !draftDirty && !next.running) {
+          const request = await api.nextUiRequest();
+          if (!alive || !request) return;
+          try {
+            const value = await api.openProject(request.root);
+            if (!alive) return;
+            if (request.stem !== "original" && !value.result.stems?.[request.stem]) throw new Error("指定した分離音声がありません。");
+            install(value); setTrack(request.track); setStem(request.stem);
+            setLoop({ start: request.start, end: request.end });
+            currentTime.current = request.start; setTime(request.start);
+            if (audio.current && snapshot?.root === request.root && stem === request.stem) audio.current.currentTime = request.start;
+            setMessage("AIが指定した区間を開きました。再生ボタンで試聴できます。");
+            await api.ackUiRequest(request.requestId, "applied");
+          } catch (e) {
+            await api.ackUiRequest(request.requestId, "failed", String(e));
+            if (alive) setError(String(e));
+          }
+        }
       } catch (e) { if (alive) setError(String(e)); } finally { polling = false; }
     };
     const timer = window.setInterval(refresh, 1800);
     void refresh();
     return () => { alive = false; window.clearInterval(timer); };
-  }, [snapshot?.root]);
+  }, [snapshot?.root, snapshot?.edits.revision, editor.dirty, draftDirty, busy, stem]);
   useEffect(() => {
     if (nativeApi.desktop()) return;
     const handler = (event: BeforeUnloadEvent) => { if (editor.dirty) { event.preventDefault(); event.returnValue = ""; } };
@@ -103,6 +135,7 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
   }, [snapshot?.result.bpm]);
 
   function install(value: Snapshot) {
+    setExternalChange(false);
     audio.current?.pause(); setSnapshot(value); editor.reset(value.edits.tracks);
     setTime(0); currentTime.current = 0; setPlaying(false); setStem("original"); setLoop(null); setSelectedId(undefined);
     setViewAuto(false); setLyrics(""); setMessage("プロジェクトを開きました。");
@@ -128,9 +161,9 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
     if (!snapshot) return;
     if (editor.dirty) await save();
     setMessage("解析を開始しています…");
-    await api.analyze(snapshot.root, { mode, lyrics: region ? (selected?.label ?? "") : lyrics, eventSensitivity, beatboxRecall, ...(region ? { region } : {}), ...(scope ? { scope } : {}) });
+    const started = await api.analyze(snapshot.root, { mode, lyrics: region ? (selected?.label ?? "") : lyrics, eventSensitivity, beatboxRecall, ...(region ? { region } : {}), ...(scope ? { scope } : {}) });
     previousRunning.current = true;
-    setJob({ running: true, kind: "analysis", log: "" }); setViewAuto(false);
+    setJob({ running: true, kind: "analysis", log: "", jobId: started.jobId }); setViewAuto(false);
     if (scope) { setTrack(scope === "harmony" ? "chords" : "vocalEvents"); setSelectedId(undefined); }
   }
   function seek(value: number) {
@@ -177,7 +210,7 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
           <label className="check-label"><input type="checkbox" checked={beatboxRecall} disabled={locked} onChange={e => setBeatboxRecall(e.target.checked)} />ビートボックスの候補を広く拾う</label><p className="muted">分離ボーカルの打撃音も補助検出します。ラップ・ブレス・楽器漏れを含むため試聴して確認してください。</p>
           <button className="full" disabled={!snapshot || !runtime?.ready || locked} onClick={() => void guarded(() => start(undefined, "vocal-events"))}>声の表現だけ検出</button>
         </div>
-        {job.running && <button className="full danger" onClick={() => void guarded(async () => { await api.cancelJob(); setMessage("解析を中止しました。完了済みの結果は保持されます。"); })}>処理を中止</button>}
+        {job.running && <button className="full danger" disabled={job.cancelRequested} onClick={() => void guarded(async () => { await api.cancelJob(job.jobId); setMessage("中止を要求しました。現在の処理の区切りまで待っています。"); })}>{job.cancelRequested ? "中止待ち…" : "処理を中止"}</button>}
         <div className="section-divider"><div className="eyebrow">TRACKS</div>
           {Object.entries({ ...TRACK_NAMES, energy: "盛り上がり", pitch: "主旋律", stems: "楽器の出入り" }).map(([id, name]) => <label className="track-toggle" key={id}><input type="checkbox" checked={visible[id]} onChange={e => setVisible({ ...visible, [id]: e.target.checked })} />{name}</label>)}
         </div>
@@ -188,6 +221,9 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
       </aside>
       <main className="main-panel">
       {snapshot ? <>
+        {externalChange && <div role="alert" className="error">AIまたは別の画面で保存内容が更新されました。手元の変更は保持しています。
+          <button onClick={() => { if (window.confirm("手元の未保存の変更を破棄し、最新の保存内容を読み込みますか？")) void guarded(async () => install(await api.openProject(snapshot.root))); }}>最新の保存内容を読み込む</button>
+        </div>}
         <div className="project-heading"><div><div className="eyebrow">SONG WORKSPACE</div><h1>{snapshot.project.name}</h1><p className="muted">{timeLabel(duration)} · {displayedBpm ? displayedBpm.toFixed(1) + (editor.tracks.beats && !viewAuto ? " BPM（修正）" : " BPM（推定）") : "BPM 未解析"} · {(tracks.key ?? [])[0]?.label ?? "キー 未解析"}</p></div>
           <div className="button-row"><button disabled={!editor.canUndo || busy} onClick={editor.undo}>元に戻す</button><button disabled={!editor.canRedo || busy} onClick={editor.redo}>やり直す</button><button disabled={!editor.dirty || busy} onClick={() => void guarded(save)}>{editor.dirty ? "● 修正を保存" : "保存済み"}</button>
           <button disabled={busy || job.running} onClick={() => void guarded(async () => { if (editor.dirty) await save(); const result = await api.exportProject(snapshot.root); setMessage("書き出しました: " + result.path + (result.untimedLyrics ? "（時刻未確定の歌詞は字幕から除外）" : "")); })}>書き出し ↗</button></div>
@@ -218,7 +254,7 @@ export function App({ bridge = nativeApi }: { bridge?: typeof nativeApi } = {}) 
       {showLog && <section className="log-panel"><h3>処理ログ</h3><p className="muted">{runtime?.path}</p><pre>{job.log || "まだログはありません。"}</pre></section>}
       </main>
       <aside className="inspector"><div className="eyebrow">DETAILS</div>
-        {selected && !viewAuto ? <Inspector key={selected.id + JSON.stringify(selected)} track={track} row={selected} duration={duration} onSave={changeRow} onDelete={() => { editor.change({ ...editor.tracks, [track]: rows.filter(r => r.id !== selected.id) }); setSelectedId(undefined); }} onLoop={() => { if (selected.start !== null && selected.end !== null) { setLoop({ start: selected.start, end: selected.end }); seek(selected.start); } }} onRegion={language => { if (selected.start !== null && selected.end !== null) void guarded(() => start({ start: selected.start!, end: selected.end!, language })); }} /> :
+        {selected && !viewAuto ? <Inspector key={selected.id + JSON.stringify(selected)} track={track} row={selected} duration={duration} onDirtyChange={setDraftDirty} onSave={changeRow} onDelete={() => { editor.change({ ...editor.tracks, [track]: rows.filter(r => r.id !== selected.id) }); setSelectedId(undefined); }} onLoop={() => { if (selected.start !== null && selected.end !== null) { setLoop({ start: selected.start, end: selected.end }); seek(selected.start); } }} onRegion={language => { if (selected.start !== null && selected.end !== null) void guarded(() => start({ start: selected.start!, end: selected.end!, language })); }} /> :
         <div className="inspector-empty"><span>⌁</span><h3>{viewAuto ? "自動結果を比較中" : "気になる区間を選択"}</h3><p>タイムラインや一覧から項目を選ぶと、内容と時刻を修正できます。</p><p>未確認の推定は、試聴して確かめてください。</p></div>}
       </aside>
     </div>

@@ -1,5 +1,7 @@
-param([string]$RuntimeRoot = (Join-Path $PSScriptRoot '../.runtime'))
+param([string]$RuntimeRoot = (Join-Path $PSScriptRoot '../.runtime'), [switch]$RuntimeLockHeld)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'runtime-lock.ps1')
+$install = {
 $chordHome = Join-Path ([IO.Path]::GetFullPath($RuntimeRoot)) 'chordmini'
 $chordRepo = Join-Path $chordHome 'repo'
 $chordPython = Join-Path $chordHome 'venv/Scripts/python.exe'
@@ -23,3 +25,5 @@ if ($LASTEXITCODE -ne 0) { throw 'ChordMini package installation failed.' }
 if ($LASTEXITCODE -ne 0) { throw 'ChordMini verification failed.' }
 & uv pip freeze --python $chordPython | Set-Content -Encoding utf8 (Join-Path $chordHome 'requirements.lock.txt')
 Write-Output 'ChordMini setup complete. Inference runs offline.'
+}
+if ($RuntimeLockHeld) { & $install } else { Invoke-WithRuntimeLock -RuntimeRoot $RuntimeRoot -Action $install }

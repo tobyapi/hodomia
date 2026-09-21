@@ -19,6 +19,10 @@ def execute(request, runtime):
     if operation == 'export':
         return storage.export(args['root'])
     if operation == 'delete_analysis':
+        from jobs import Jobs
+        from control_errors import BusyError
+        if Jobs(runtime).latest()['running']:
+            raise BusyError()
         return storage.delete_analysis(args['root'])
     if operation == 'analyze':
         from pipeline import run
@@ -32,6 +36,12 @@ def execute(request, runtime):
         if operation == 'cancel_job':
             return jobs.cancel(args['jobId'])
         return jobs.latest(include_log=True)
+    if operation in ('next_ui_request', 'ack_ui_request'):
+        from ui_requests import UiRequests
+        requests = UiRequests(runtime)
+        if operation == 'next_ui_request':
+            return requests.next()
+        return requests.acknowledge(args['requestId'], args['state'], args.get('message'))
     raise ValueError('Unknown operation')
 
 

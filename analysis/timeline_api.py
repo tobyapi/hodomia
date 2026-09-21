@@ -25,7 +25,8 @@ def version_check(value, revision, run_id):
 
 def get_timeline(root, tracks=None, start=0, end=None, view='effective', offset=0, limit=100,
                  includeUntimed=False, expectedRevision=None, expectedRunId=None):
-    value = storage.snapshot(root)
+    with file_lock(Path(root) / '.analysis.lock'), file_lock(Path(root) / '.write.lock'):
+        value = storage.snapshot(root)
     if expectedRevision is not None:
         version_check(value, expectedRevision, expectedRunId)
     if tracks is None:
