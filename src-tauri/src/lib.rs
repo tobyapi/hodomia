@@ -19,18 +19,18 @@ fn app_builder<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<
         .manage(workspace::Workspace::default())
         .invoke_handler(tauri::generate_handler![
             runtime_info,
-            workspace::choose_path,
-            workspace::workspace_operation,
-            workspace::start_analysis,
-            workspace::job_status,
-            workspace::cancel_job,
-            workspace::runtime_status,
-            workspace::setup_runtime,
-            workspace::read_lyrics,
-            workspace::saved_projects,
-            workspace::remove_saved_project,
-            workspace::next_ui_request,
-            workspace::ack_ui_request
+            workspace::selection::choose_path,
+            workspace::operations::workspace_operation,
+            workspace::analysis_jobs::start_analysis,
+            workspace::job_status::job_status,
+            workspace::analysis_jobs::cancel_job,
+            workspace::runtime_status::runtime_status,
+            workspace::setup::setup_runtime,
+            workspace::lyrics::read_lyrics,
+            workspace::saved::saved_projects,
+            workspace::library_removal::remove_saved_project,
+            workspace::ui_requests::next_ui_request,
+            workspace::ui_requests::ack_ui_request
         ])
 }
 
@@ -41,35 +41,9 @@ pub fn run() {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
+mod runtime_tests;
 
-    #[test]
-    fn runtime_info_has_the_frontend_contract() {
-        let app = app_builder(tauri::test::mock_builder())
-            .build(tauri::test::mock_context(tauri::test::noop_assets()))
-            .unwrap();
-        let window = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
-            .build()
-            .unwrap();
-        let response = tauri::test::get_ipc_response(
-            &window,
-            tauri::webview::InvokeRequest {
-                cmd: "runtime_info".into(),
-                callback: tauri::ipc::CallbackFn(0),
-                error: tauri::ipc::CallbackFn(1),
-                url: "http://tauri.localhost".parse().unwrap(),
-                body: tauri::ipc::InvokeBody::default(),
-                headers: Default::default(),
-                invoke_key: tauri::test::INVOKE_KEY.to_string(),
-            },
-        )
-        .unwrap();
-        let value = response.deserialize::<serde_json::Value>().unwrap();
-        assert_eq!(value["name"], "Music Sweeper");
-        assert_eq!(value["version"], env!("CARGO_PKG_VERSION"));
-        assert_eq!(value["runtime"], "Tauri");
-    }
-}
 mod library;
 mod workspace;
+
+mod errors;
