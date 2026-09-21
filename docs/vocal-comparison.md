@@ -1,5 +1,7 @@
 # ASTとYAMNetの声分類比較
 
+[Demucs / Mel-Bandの分離比較](separation-comparison.md)にも対応。Mel-Bandを追加済みの曲では、保存されたボーカルも分類比較に含む。
+
 通常の声の分類はASTを継続し、比較は `scope=vocal-comparison` として別に実行する。原曲と、既に分離済みならボーカルの双方について、ハミング・ブレス・ビートボックスの未校正スコアを保存する。比較だけでは分離処理を実行しない。ボーカルも比較したい場合は先に全体分析を実行する。
 
 YAMNetは公式 `google/yamnet/1` SavedModelを専用Python 3.11 / TensorFlow 2.20 CPU環境で使う。`npm run setup:yamnet` がモデルと依存を初回取得し、固定したアーカイブSHA-256、展開後ファイル、対象ラベル、推論を検証する。解析時はローカルファイルのみを読み、通信を拒否する。既存のPyTorch環境へTensorFlowを追加しない。

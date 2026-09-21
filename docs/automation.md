@@ -1,5 +1,7 @@
 # ローカル自動操作
 
+[Mel-Band分離比較](separation-comparison.md)は `scope=separation-comparison`。比較用音声は `melband_vocals` / `melband_instrumental` として取得・切り出し・GUI表示できる。
+
 GUIを開かず、同じプロジェクト形式と解析器を使用できます。初回セットアップはGUIまたは`npm run setup:analysis`で済ませてください。解析はオフラインで実行します。
 
 ## ヘッドレスCLI

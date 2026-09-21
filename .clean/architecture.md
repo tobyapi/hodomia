@@ -1,5 +1,7 @@
 # 構成
 
+- `melband.py` / `melband_runner.py`: 比較用分離のプロセス境界、固定モデル・設定検証、キャッシュ、取消、出力検証。`melband_install.py`とsetup-melband.ps1のみオンライン準備。`playback_sources.py`は通常ステムと比較音声の試聴用一覧をまとめ、DSPの4ステム入力と分ける。`SeparationComparison.tsx`は分離の実行と同時刻の音声切替を表示する。
+
 React UI → src/api.ts → Tauri IPC → Rust workspace → Python CLI。
 
 自動操作はheadless.py → control.py → storage/jobs/pipeline。stdioの形式と業務操作を分離する。jobsは独立ワーカーと永続状態を所有し、lockingのOSファイルロックをGUI側の保存・解析にも適用する。project_libraryは既存のGUI登録ファイルを読み取る。
