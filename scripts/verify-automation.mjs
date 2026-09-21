@@ -1,4 +1,4 @@
-// Opt-in real-model check. Creates a new run of the selected scope in each supplied project.
+// Opt-in real-model check. Creates a new harmony run in each explicitly supplied project.
 import { Client } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { readFile } from 'node:fs/promises';
@@ -7,11 +7,8 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { repository } from '../automation/worker-client.mjs';
 
-const args = process.argv.slice(2);
-const scope = args[0] === '--scope' ? args.splice(0, 2)[1] : 'harmony';
-assert.ok(['harmony', 'vocal-comparison', 'separation-comparison'].includes(scope), 'Supported scope: harmony, vocal-comparison or separation-comparison');
-const roots = args.map(p => path.resolve(p));
-if (!roots.length) throw new Error('Pass test project folders; a new analysis run is created in each.');
+const roots = process.argv.slice(2).map(p => path.resolve(p));
+if (!roots.length) throw new Error('Pass test project folders; a new BTC harmony run is created in each.');
 const read = async file => JSON.parse(await readFile(file, 'utf8'));
 const hash = async file => createHash('sha256').update(await readFile(file)).digest('hex');
 const client = new Client({ name: 'real-model-verification', version: '1.0.0' });
@@ -30,7 +27,7 @@ try {
     const original = await hash(path.join(root, project.source.path));
     const audio = await hash(path.join(root, project.audio));
     const before = await read(path.join(root, 'runs', project.currentRun, 'result.json'));
-    const job = await call('start_analysis', { root, options: { mode: 'japanese', scope } });
+    const job = await call('start_analysis', { root, options: { mode: 'japanese', scope: 'harmony' } });
     console.log(JSON.stringify({ root, jobId: job.jobId, state: job.state }));
     let state;
     const deadline = Date.now() + 600_000;
@@ -41,28 +38,15 @@ try {
     assert.equal(state.state, 'complete', JSON.stringify(state));
     const after = await read(path.join(root, 'runs', state.runId, 'result.json'));
     for (const [track, rows] of Object.entries(before.tracks)) {
-      if (scope !== 'harmony' || (track !== 'chords' && track !== 'key')) assert.deepEqual(after.tracks[track], rows);
+      if (track !== 'chords' && track !== 'key') assert.deepEqual(after.tracks[track], rows);
     }
     assert.deepEqual(await read(path.join(root, 'edits.json')), edits);
     assert.equal(await hash(path.join(root, project.source.path)), original);
     assert.equal(await hash(path.join(root, project.audio)), audio);
-    if (scope !== 'harmony') {
-      assert.deepEqual(after.series, before.series);
-      assert.deepEqual(after.stems, before.stems);
-      const summary = await call('get_vocal_comparison', { root });
-      assert.equal(summary.variants.length, (after.stems.vocals ? 4 : 2) + (after.separationComparison ? 2 : 0));
-      for (const variant of summary.variants) {
-        const page = await call('get_vocal_comparison', { root, variantId: variant.id, start: 0, end: 5, limit: 3, expectedRunId: summary.runId });
-        assert.equal(page.rows.length, 3);
-      }
-      console.log(JSON.stringify({ root, jobId: job.jobId, state: state.state, runId: state.runId,
-        variants: summary.variants, originalAndEditsPreserved: true }));
-    } else {
-      const timeline = await call('get_timeline', { root, tracks: ['chords'], start: 0, end: 5, view: 'automatic' });
-      assert.ok(timeline.rows.length > 0);
-      assert.equal(after.engines.chords.backend, 'chordmini-btc');
-      console.log(JSON.stringify({ root, jobId: job.jobId, state: state.state, runId: state.runId,
-        chordCount: after.tracks.chords.length, originalAndEditsPreserved: true }));
-    }
+    const timeline = await call('get_timeline', { root, tracks: ['chords'], start: 0, end: 5, view: 'automatic' });
+    assert.ok(timeline.rows.length > 0);
+    assert.equal(after.engines.chords.backend, 'chordmini-btc');
+    console.log(JSON.stringify({ root, jobId: job.jobId, state: state.state, runId: state.runId,
+      chordCount: after.tracks.chords.length, originalAndEditsPreserved: true }));
   }
 } finally { await client.close(); }

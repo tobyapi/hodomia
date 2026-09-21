@@ -11,15 +11,7 @@ export type TimelineRow = {
 export type Tracks = Partial<Record<Track, TimelineRow[]>>;
 export type Edits = { revision: number; tracks: Tracks };
 export type Point = { time: number; value: number | null };
-export type ComparisonCategory = "beatbox" | "breath" | "humming";
-export type VocalVariant = { id: string; model: "ast" | "yamnet"; source: string; windowSeconds: number; hopSeconds: number;
-  thresholds: Record<ComparisonCategory, { onset: number; offset: number }>;
-  frames: { start: number; end: number; scores: Record<ComparisonCategory, number>; classScores: Record<string, number> }[];
-  candidates: TimelineRow[] };
-export type VocalComparison = { schemaVersion: number; runId?: string; duration: number; variants: VocalVariant[]; notice: string };
 export type Analysis = {
-  separationComparison?: { stems: Record<string, string>; engine: { model: string; device: string; settings: { segmentSize: number }; fallback: boolean } };
-  vocalComparisons?: VocalComparison;
   runId?: string; mode?: Mode; bpm?: number | null; tracks?: Tracks;
   stems?: Record<string, string>; engines?: Record<string, unknown>;
   series?: {
@@ -36,9 +28,8 @@ export type Snapshot = {
 };
 export type Job = { running: boolean; success?: boolean | null; kind: string | null; log: string; jobId?: string; root?: string; cancelRequested?: boolean };
 export type UiRequest = { requestId: string; root: string; start: number; end: number; stem: string; track: Track; state: string };
-export type RuntimeStatus = { path: string; ready: boolean; chordMiniReady?: boolean; yamnetReady?: boolean; melbandReady?: boolean; details?: { cudaAvailable: boolean; torch: string } };
-export type AnalysisOptions = { mode: Mode; lyrics: string; scope?: "vocal-events" | "vocal-comparison" | "separation-comparison" | "harmony"; beatboxRecall?: boolean; eventSensitivity?: "standard" | "sensitive"; region?: { start: number; end: number; language: "ja" | "en" } };
+export type RuntimeStatus = { path: string; ready: boolean; chordMiniReady?: boolean; details?: { cudaAvailable: boolean; torch: string } };
+export type AnalysisOptions = { mode: Mode; lyrics: string; scope?: "vocal-events" | "harmony"; beatboxRecall?: boolean; eventSensitivity?: "standard" | "sensitive"; region?: { start: number; end: number; language: "ja" | "en" } };
 export const TRACK_NAMES: Record<Track, string> = { beats: "拍・小節", sections: "曲構成", lyrics: "歌詞", words: "単語", vocalEvents: "声の表現", chords: "コード", key: "キー" };
 export const VOCAL_CATEGORIES: Record<VocalCategory, string> = { rap: "ラップ", spoken: "朗読・語り", beatbox: "ビートボックス", breath: "ブレス", humming: "ハミング", other: "その他の非言語発声" };
-export const STEM_NAMES: Record<string, string> = { vocals: "ボーカル", drums: "ドラム", bass: "ベース", other: "その他", melband_vocals: "Mel-Band ボーカル", melband_instrumental: "Mel-Band 伴奏" };
-export const playbackStems = (result: Analysis) => ({ ...result.stems, ...result.separationComparison?.stems });
+export const STEM_NAMES: Record<string, string> = { vocals: "ボーカル", drums: "ドラム", bass: "ベース", other: "その他" };

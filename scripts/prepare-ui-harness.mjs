@@ -16,6 +16,6 @@ const result = await json(join(run, "result.json"));
 const status = await json(join(run, "status.json"));
 await mkdir("test-results/ui-media", { recursive: true });
 await copyFile(within(project.audio), "test-results/ui-media/original.wav");
-for (const path of Object.values({ ...result.stems, ...result.separationComparison?.stems })) await copyFile(within(path), join("test-results/ui-media", basename(path)));
+for (const path of Object.values(result.stems ?? {})) await copyFile(within(path), join("test-results/ui-media", basename(path)));
 await writeFile("test-results/ui-snapshot.json", JSON.stringify({ root, project, edits, result, status }));
 console.log("Open http://127.0.0.1:1430/tests/ui/ with npm run dev running.");

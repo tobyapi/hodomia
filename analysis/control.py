@@ -4,7 +4,6 @@ from control_errors import ControlError
 from jobs import Jobs
 from project_library import canonical, default_projects, default_registry, list_projects, registered, remember
 import storage
-from playback_sources import stems
 
 
 class Control:
@@ -50,16 +49,10 @@ class Control:
             artifacts = Artifacts(self.runtime)
             value['artifacts'] = [artifacts.register(root, Path(value['path']) / name, mime)
                                   for name, mime in [('analysis.json', 'application/json'), ('timeline.csv', 'text/csv'), ('lyrics.srt', 'text/plain')]]
-            comparison_csv = Path(value['path']) / 'vocal-comparison.csv'
-            if comparison_csv.is_file():
-                value['artifacts'].append(artifacts.register(root, comparison_csv, 'text/csv'))
             return value
         if operation == 'get_timeline':
             from timeline_api import get_timeline
             return get_timeline(self.root(args['root']), **{k: v for k, v in args.items() if k != 'root'})
-        if operation == 'get_vocal_comparison':
-            from vocal_comparison_api import get_comparison
-            return get_comparison(self.root(args['root']), **{k: v for k, v in args.items() if k != 'root'})
         if operation == 'update_segments':
             from timeline_api import update_segments
             return update_segments(self.root(args['root']), **{k: v for k, v in args.items() if k != 'root'})
@@ -89,4 +82,4 @@ class Control:
         return dict(root=str(canonical(root)), project=value['project'], revision=value['edits']['revision'],
                     status=value['status'], engines=value['result'].get('engines', {}),
                     tracks={name: {'count': len(rows), 'unreviewed': sum(not row.get('reviewed', False) for row in rows)} for name, rows in tracks.items()},
-                    stems=list(stems(value['result'])))
+                    stems=list(value['result'].get('stems', {})))

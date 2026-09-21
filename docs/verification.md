@@ -1,5 +1,11 @@
 # 検証記録 — 2026-09-21
 
+## 比較モデルの撤去
+
+ユーザー指定でMel-Band・YAMNetの機能と専用環境を撤去し、Demucs分離・AST分類へ統一。以下の比較検証は過去の記録であり、現在の利用機能ではない。過去のrun、通常の解析結果、手修正は保持する。旧比較メタデータを含む曲でも比較UIや追加の試聴音声を出さない回帰テストと、廃止したscopeを受け付けないテストを追加。Windows進捗保存の再試行は保持。
+
+撤去後の `npm run check` はUI36・Python45・MCP1・Rust2の計84テスト、型検査・Vite・rustfmt・Clippyが成功。初回のPythonジョブ試験で一時的なWindows読み取り共有競合が発生したため再実行し、成功した。読み取り側の共有競合は未修正。`npm run tauri:build -- --no-bundle` 成功、Windows実行ファイルを更新。`.runtime/yamnet` と `.runtime/melband`、配布リソース内に残った対応スクリプトを削除した。
+
 ## Mel-Band分離比較
 
 audio-separator0.47.0、Kimberley Jensen版の固定重み・YAML、PyTorch2.8.0+cu128の独立環境で検証。RTX2080で8秒窓・overlap4・autocast、通信禁止で2曲の分離とAST/YAMNet比較が完了した。通常の4ステム・全トラック・series・手修正・元音源・再生PCMの保持をMCP経由の実行ハーネスで照合した。

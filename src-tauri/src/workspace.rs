@@ -386,12 +386,8 @@ pub fn runtime_status<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<Val
         && runtime.join("venv/Scripts/python.exe").is_file();
     let chord_mini_ready = runtime.join("chordmini/installation.json").is_file()
         && runtime.join("chordmini/venv/Scripts/python.exe").is_file();
-    let yamnet_ready = runtime.join("yamnet/installation.json").is_file()
-        && runtime.join("yamnet/venv/Scripts/python.exe").is_file();
-    let melband_ready = runtime.join("melband/installation.json").is_file()
-        && runtime.join("melband/venv/Scripts/python.exe").is_file();
     Ok(
-        json!({"path": runtime, "ready": complete, "details": ready, "chordMiniReady": chord_mini_ready, "yamnetReady": yamnet_ready, "melbandReady": melband_ready}),
+        json!({"path": runtime, "ready": complete, "details": ready, "chordMiniReady": chord_mini_ready}),
     )
 }
 
@@ -400,17 +396,7 @@ pub fn setup_runtime<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     state: State<Workspace>,
     chord_mini: Option<bool>,
-    yamnet: Option<bool>,
-    melband: Option<bool>,
 ) -> Result<(), String> {
-    if [chord_mini, yamnet, melband]
-        .iter()
-        .filter(|value| value.unwrap_or(false))
-        .count()
-        > 1
-    {
-        return Err("セットアップするモデルは1つずつ指定してください。".into());
-    }
     let mut job = state.job.lock().map_err(|e| e.to_string())?;
     assert_idle(&mut job)?;
     let runtime = runtime_root(&app)?;
@@ -422,11 +408,7 @@ pub fn setup_runtime<R: tauri::Runtime>(
     }
     let log_path = runtime.join("setup.log");
     let log = fs::File::create(&log_path).map_err(|e| e.to_string())?;
-    let script = if melband.unwrap_or(false) {
-        "scripts/setup-melband.ps1"
-    } else if yamnet.unwrap_or(false) {
-        "scripts/setup-yamnet.ps1"
-    } else if chord_mini.unwrap_or(false) {
+    let script = if chord_mini.unwrap_or(false) {
         "scripts/setup-chordmini.ps1"
     } else {
         "scripts/setup-analysis.ps1"

@@ -1,5 +1,7 @@
 # 決定
 
+- 2026-09-21（撤去）: ユーザー指定でMel-Band・YAMNetの推論、比較UI/API、セットアップと専用環境を削除。分離はDemucs htdemucs_ft、声の分類は既存ASTを使用する。以下の比較導入の決定を上書きする。元音源、通常解析、手修正と過去runは保持し、過去run内の比較メタデータは画面から利用しない。Windows保存競合修正は維持する。
+
 - 2026-09-21: ユーザー選択によりKimberley Jensen Mel-Bandのみ追加。独立venvから原曲を分離し、比較用のボーカル・伴奏を別保存。scope=separation-comparisonは通常トラック・手修正を保持し、AST/YAMNet×原曲/Demucs/Mel-Bandを比較する。既定の分離・ASR入力は変更しない。固定ハッシュ・通信禁止・モデル直接指定でオフライン動作を確認。Windows進捗保存で実測した共有違反には上限付き再試行を入れる。
 
 - 2026-09-21: YAMNet v1を声の比較用に追加。通常分類はASTを継続し、scope=vocal-comparisonでAST/YAMNet×原曲/既存ボーカルを個別に比較する。YAMNetはTensorFlow 2.20 CPUの独立venv、アーカイブSHA-256固定、推論中通信禁止。しきい値は仮の基準であり実曲精度を保証しない。比較では通常トラック・手修正を上書きしない。

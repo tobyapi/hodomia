@@ -16,6 +16,13 @@ from storage import save_edits, snapshot, write_json
 
 
 class ControlTests(unittest.TestCase):
+    def test_removed_comparison_scopes_are_rejected_before_job_creation(self):
+        from analysis_options import validate_options
+        for scope in ('vocal-comparison', 'separation-comparison'):
+            with self.assertRaises(ValueError):
+                validate_options({'mode': 'japanese', 'scope': scope}, 60)
+        validate_options({'mode': 'japanese', 'scope': 'vocal-events'}, 60)
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.home = Path(self.temp.name)

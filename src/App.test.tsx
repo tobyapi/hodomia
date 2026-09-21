@@ -18,6 +18,20 @@ const fixture: Snapshot = {
   result: { bpm: 120, tracks: { sections: [{ id: "s1", start: 10, end: 20, label: "サビ", reviewed: false }] }, stems: {} },
   status: { state: "complete", stage: "解析完了", progress: 1, errors: [] },
 };
+
+test("saved comparison metadata does not re-enable retired models or playback sources", async () => {
+  const value = structuredClone(fixture);
+  value.result.stems = { vocals: 'stems/vocals.wav' };
+  Object.assign(value.result, { vocalComparisons: { variants: [] }, separationComparison: { stems: { melband_vocals: 'old.wav' } } });
+  vi.mocked(api.openProject).mockResolvedValue(value);
+  render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: 'プロジェクトを開く' }));
+  await screen.findByRole('heading', { name: 'テスト曲' });
+  fireEvent.change(screen.getByLabelText('編集トラック'), { target: { value: 'vocalEvents' } });
+  expect(screen.queryByRole('button', { name: /YAMNet|Mel-Band/ })).not.toBeInTheDocument();
+  expect(screen.getByLabelText('試聴する音声').querySelectorAll('option')).toHaveLength(2);
+  expect(screen.getByRole('button', { name: '声の表現だけ検出' })).toBeEnabled();
+});
 beforeEach(() => {
   vi.mocked(api.nextUiRequest).mockResolvedValue(null);
   vi.mocked(api.removeSavedProject).mockResolvedValue(undefined);
@@ -348,39 +362,4 @@ test("cancel uses the job ID returned at start, before a subsequent status poll"
   fireEvent.click(screen.getByRole("button", { name: "全体を再分析" }));
   fireEvent.click(await screen.findByRole("button", { name: "処理を中止" }));
   await waitFor(() => expect(api.cancelJob).toHaveBeenCalledWith("started-job"));
-});
-
-test("voice comparison sends its own scope and keeps the normal voice track", async () => {
-  vi.mocked(api.runtimeStatus).mockResolvedValue({ path: 'runtime', ready: true, yamnetReady: true });
-  const value = structuredClone(fixture);
-  value.edits.tracks.vocalEvents = [{ id: 'manual', start: 0, end: 1, label: '確認した音', category: 'beatbox', reviewed: true }];
-  vi.mocked(api.openProject).mockResolvedValue(value);
-  render(<App />);
-  fireEvent.click(screen.getByRole('button', { name: 'プロジェクトを開く' }));
-  await screen.findByRole('heading', { name: 'テスト曲' });
-  fireEvent.change(screen.getByLabelText('編集トラック'), { target: { value: 'vocalEvents' } });
-  fireEvent.click(screen.getByRole('button', { name: 'AST / YAMNet を比較' }));
-  await waitFor(() => expect(api.analyze).toHaveBeenCalledWith(fixture.root, expect.objectContaining({ scope: 'vocal-comparison' })));
-  expect(screen.getByRole('button', { name: '確認した音' })).toBeVisible();
-  expect(api.saveEdits).not.toHaveBeenCalled();
-});
-
-test("Mel-Band comparison sends its own scope and exposes independent playback sources", async () => {
-  vi.mocked(api.runtimeStatus).mockResolvedValue({ path: 'runtime', ready: true, yamnetReady: true, melbandReady: true });
-  const value = structuredClone(fixture);
-  value.result.separationComparison = { stems: { melband_vocals: 'mel/v.wav', melband_instrumental: 'mel/i.wav' },
-    engine: { model: 'melband', device: 'cuda', settings: { segmentSize: 801 }, fallback: false } };
-  vi.mocked(api.openProject).mockResolvedValue(value);
-  render(<App />);
-  fireEvent.click(screen.getByRole('button', { name: 'プロジェクトを開く' }));
-  await screen.findByRole('heading', { name: 'テスト曲' });
-  fireEvent.change(screen.getByLabelText('編集トラック'), { target: { value: 'vocalEvents' } });
-  fireEvent.change(screen.getByLabelText('再生位置'), { target: { value: '2' } });
-  fireEvent.click(screen.getByRole('button', { name: 'ループ' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Mel-Band 伴奏' }));
-  expect(screen.getByLabelText('試聴する音声')).toHaveValue('melband_instrumental');
-  expect(screen.getByLabelText('再生位置')).toHaveValue('2');
-  expect(screen.getByRole('button', { name: 'ループ' })).toHaveAttribute('aria-pressed', 'true');
-  fireEvent.click(screen.getByRole('button', { name: 'Mel-Bandで分離して比較' }));
-  await waitFor(() => expect(api.analyze).toHaveBeenCalledWith(fixture.root, expect.objectContaining({ scope: 'separation-comparison' })));
 });
