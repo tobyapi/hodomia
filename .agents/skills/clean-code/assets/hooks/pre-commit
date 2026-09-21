@@ -1,0 +1,90 @@
+#!/bin/sh
+# clean-code-skills pre-commit hook
+#
+# Checks the architecture you declared, on every commit, on every host. This is the
+# portable enforcement path: it needs no agent, no editor, and no host support -- just
+# git and Python.
+#
+# Install:
+#   cp assets/hooks/pre-commit .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+#
+# Skip once:            git commit --no-verify
+# Skip permanently:     CLEAN_CODE_HOOK=off git commit
+#
+# Exits non-zero only for a dependency-rule violation. The smell scan is advisory and
+# never blocks a commit -- it prints what you are about to add so you can decide.
+
+set -eu
+
+[ "${CLEAN_CODE_HOOK:-on}" = "off" ] && exit 0
+
+# Locate the skill: installed in this project, or set CLEAN_CODE_SKILL explicitly.
+SKILL_DIR="${CLEAN_CODE_SKILL:-}"
+if [ -z "$SKILL_DIR" ]; then
+  for candidate in \
+    ".clean/skill" \
+    ".claude/skills/clean-code" \
+    ".agents/skills/clean-code" \
+    ".github/skills/clean-code" \
+    "skills/clean-code"
+  do
+    if [ -d "$candidate/scripts" ]; then
+      SKILL_DIR="$candidate"
+      break
+    fi
+  done
+fi
+
+if [ -z "$SKILL_DIR" ]; then
+  # Nothing to run against. Never block a commit because the hook cannot find itself.
+  exit 0
+fi
+
+PYTHON="${PYTHON_BIN:-}"
+if [ -z "$PYTHON" ]; then
+  for candidate in python3 python py; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      PYTHON="$candidate"
+      break
+    fi
+  done
+fi
+
+if [ -z "$PYTHON" ]; then
+  echo "clean-code: Python not found, skipping checks." >&2
+  exit 0
+fi
+
+status=0
+
+# 1. Dependency direction. Blocking, but only when layers are actually declared:
+#    a project that has not declared its architecture has nothing to violate.
+if [ -f ".clean/architecture.md" ] || [ -f "ARCHITECTURE.md" ]; then
+  if ! "$PYTHON" "$SKILL_DIR/scripts/check_boundaries.py" --root .; then
+    status=1
+  fi
+fi
+
+# 2. Measurable smells in the staged change. Advisory only.
+if [ -f "$SKILL_DIR/scripts/scan_repo.py" ]; then
+  "$PYTHON" "$SKILL_DIR/scripts/scan_repo.py" --root . --changed --top 5 || true
+fi
+
+if [ "$status" -ne 0 ]; then
+  cat >&2 <<'MESSAGE'
+
+clean-code: commit blocked by a dependency-rule violation.
+
+An inner layer now names something in an outer layer. Fix it by inverting the
+dependency -- declare the interface on the inner side and implement it outside --
+rather than by widening the rules in .clean/architecture.md.
+
+If this boundary is intentional, add an explicit `allow` line to the declaration
+and say why in .clean/decisions.md.
+
+To commit anyway: git commit --no-verify
+MESSAGE
+fi
+
+exit "$status"

@@ -1,6 +1,7 @@
 # 開発手順
 - このプロジェクトは Tauri 2 + React 19 + TypeScript。
 - 作業前に README.md と .clean/architecture.md を読む。
+- コードの作成・変更・レビュー・テスト・リファクタリングでは `.agents/skills/clean-code/SKILL.md` と必要な参照資料を読む。このプロジェクトの開発手順と品質ゲートを優先する。
 - UI は src/、Tauri 呼び出しは src/api.ts、Rust は src-tauri/src/、解析ワーカーは analysis/ に置く。
 - ブラウザーのプレビューと実際の Tauri IPC を区別する。テストのモックを製品コードに入れない。
 - 変更後は npm run check。ネイティブ設定を変えた場合は npm run tauri:build -- --no-bundle も実行する。

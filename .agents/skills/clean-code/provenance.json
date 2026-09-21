@@ -1,0 +1,115 @@
+{
+  "skill": "clean-code",
+  "version": "3.0.0",
+  "source": "Local installed skill: $CODEX_HOME/skills/clean-code",
+  "upstreamUrl": null,
+  "upstreamCommit": null,
+  "bundledAt": "2026-09-21",
+  "declaredLicense": "MIT",
+  "files": [
+    {
+      "path": "assets/hooks/claude-settings.json",
+      "sha256": "6e6f6cf3dbce011d6bf3d48534396f0871aecc7e29aebee6d7bcf97240e2ce51"
+    },
+    {
+      "path": "assets/hooks/pre-commit",
+      "sha256": "b836822327cb96ef3a1c0baf713c0110ff6d7a533b94eee7cafac87e5e79814b"
+    },
+    {
+      "path": "assets/templates/architecture.md",
+      "sha256": "fa270539a23ef1edbe7c46ec439204a2a6adcf20ed487926c00fed9a04bae3a0"
+    },
+    {
+      "path": "assets/templates/decisions.md",
+      "sha256": "8428cff09fae76c2108b0ab9c2257367ec4b52400e2b90b11f306e9ebdcf0915"
+    },
+    {
+      "path": "assets/templates/ledger.md",
+      "sha256": "93d565ce6eeeab13068220f4ab8c087f2cc1b9ec696e8c3ec91eb66bb9dba3e4"
+    },
+    {
+      "path": "references/architecture-map.md",
+      "sha256": "c66159224893a38b54fca34ee18d23934315051da8a157e5f310d3e2632ee0b6"
+    },
+    {
+      "path": "references/architecture.md",
+      "sha256": "cfffecc773fbbf85286f803c382826fd9c43b6f4b8df09fa905af833d36d2ef6"
+    },
+    {
+      "path": "references/audit-report.md",
+      "sha256": "f81edf3945169602adaf587c7e6eb24da272badb29fce8c48c415df89202517a"
+    },
+    {
+      "path": "references/canon.md",
+      "sha256": "d290049886115b21cd3ec198b73ab76e725171efca47e771953712a3dc0b60e3"
+    },
+    {
+      "path": "references/chapter-map.md",
+      "sha256": "686d02977c2c6dc9cde9607ef58d15c03cb00fbd40087b930e05990c1250939c"
+    },
+    {
+      "path": "references/concurrency.md",
+      "sha256": "4f6ef033ab8f16435cabaaf167074e6c58c7b28bb6808e7df59d6f2d8de818e4"
+    },
+    {
+      "path": "references/examples.md",
+      "sha256": "a275e0b609c14c6a5c7037ef21719b38b2844db70283fe1b6b47137e0002c486"
+    },
+    {
+      "path": "references/framework-map.md",
+      "sha256": "836c5b06e720277ab83abbbcdaa0370045bdac00b5e3b1754059dd3dfd35cb18"
+    },
+    {
+      "path": "references/host-matrix.md",
+      "sha256": "5a50da242d1a76e83a04e4fd08587a9770b2e1959c6a889f10dbacc7b936d7d2"
+    },
+    {
+      "path": "references/memory-protocol.md",
+      "sha256": "69013609a268c5bc599719151a332060f1b134009232b0b424b7757442ec3c87"
+    },
+    {
+      "path": "references/new-project.md",
+      "sha256": "59bc44e30bff868559e71979ecceab3cdea909e226747b2956e8baa421aa4f83"
+    },
+    {
+      "path": "references/principles.md",
+      "sha256": "3be63f916216581e03790b6152dcb61a19ac2c49cb357d0526bd2c798c616735"
+    },
+    {
+      "path": "references/project-refactor.md",
+      "sha256": "88d9b498823e503af6c89eeac3c78196f50f3a68b7912f6ed1798b67cfa5c3ee"
+    },
+    {
+      "path": "references/review-checklist.md",
+      "sha256": "2fb5facd014139eef965effc9e860036c83e21eb5c0478699c43fd4b1b87c140"
+    },
+    {
+      "path": "references/session-protocol.md",
+      "sha256": "b2c8f1e4e8cd13691c28bd0cb286f47e581d414cc3d828251cc0380f07897650"
+    },
+    {
+      "path": "references/smell-triage.md",
+      "sha256": "389d2e394b8aae535f1cabd1c212a390a6d1571cec530779ed4c97de838ee1c0"
+    },
+    {
+      "path": "references/tests.md",
+      "sha256": "95f4db990ff9d2296fdd7c6eb0a339fb1f0a1eae8a4430f1e4c20731932a954a"
+    },
+    {
+      "path": "scripts/check_boundaries.py",
+      "sha256": "564771b3c0a87967fa3a873490a97a07600a5284dc37d408cd1ae33732d8e021"
+    },
+    {
+      "path": "scripts/detect_stack.py",
+      "sha256": "1da24e091596d5087ffb827578ec84dfe338ab971cc159619f67fa2a86d61eb3"
+    },
+    {
+      "path": "scripts/scan_repo.py",
+      "sha256": "ab7ad047d2a85ba6e4c1a5ca1b19a82a2881a73bfcf742a6ea9cf9430baffa8f"
+    },
+    {
+      "path": "SKILL.md",
+      "sha256": "30eb3500ddef86a336471e597d230da616d62c963065a4447c3fc0d6a4938642"
+    }
+  ]
+}

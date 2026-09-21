@@ -1,0 +1,28 @@
+{
+  "//": "clean-code-skills hooks for Claude Code. Merge these entries into .claude/settings.json (or settings.local.json) rather than replacing the file. Adjust the skill path if you installed elsewhere. Every hook here is optional: the skill's prose protocol covers the same ground when hooks are unavailable, and no hook blocks an edit.",
+  "//sessionStart": "Prints the project's declared stack and layering at session start. This is the highest-value hook available, because it removes the chance that an agent simply forgets to read .clean/ before deciding anything.",
+  "//postToolUse": "After an edit or write, re-checks dependency direction so a wrong-way import is caught in the same turn that introduced it, not at review time.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f .clean/context.json ]; then echo '--- project context (.clean/context.json) ---'; cat .clean/context.json; fi; if [ -f .clean/architecture.md ]; then echo '--- declared layering (.clean/architecture.md) ---'; sed -n '/```clean-architecture/,/```/p' .clean/architecture.md; fi; if [ -f .clean/ledger.md ]; then echo '--- cleanup campaign in progress: read .clean/ledger.md before starting ---'; fi"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f .clean/architecture.md ]; then python3 .claude/skills/clean-code/scripts/check_boundaries.py --root . || true; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
