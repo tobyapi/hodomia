@@ -24,6 +24,14 @@ def execute(request, runtime):
         from pipeline import run
         run(args['root'], runtime, args['options'])
         return {'finished': True}
+    if operation in ('start_job', 'latest_job', 'cancel_job'):
+        from jobs import Jobs
+        jobs = Jobs(runtime)
+        if operation == 'start_job':
+            return jobs.start(args['root'], args['options'])
+        if operation == 'cancel_job':
+            return jobs.cancel(args['jobId'])
+        return jobs.latest(include_log=True)
     raise ValueError('Unknown operation')
 
 

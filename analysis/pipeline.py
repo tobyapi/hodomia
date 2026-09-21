@@ -6,6 +6,9 @@ import socket
 import time
 import traceback
 import uuid
+import sys
+from locking import analysis_operation, file_lock
+from analysis_options import validate_options
 from datetime import datetime, timezone
 from pathlib import Path
 from storage import manifest, within, write_json, read_json, row
@@ -15,52 +18,45 @@ class Cancelled(Exception):
     pass
 
 
-def run(root, runtime, options):
+@analysis_operation
+def run(root, runtime, options, cancel_path=None):
     root, runtime = Path(root), Path(runtime)
     project = manifest(root)
-    if options.get('mode') not in ('multilingual', 'japanese', 'instrumental'):
-        raise ValueError('解析モードが不正です。')
+    validate_options(options, project['duration'])
     region = options.get('region')
     events_only = options.get('scope') == 'vocal-events'
     harmony_only = options.get('scope') == 'harmony'
-    if options.get('scope') not in (None, 'vocal-events', 'harmony') or (options.get('scope') and region):
-        raise ValueError('解析の対象が不正です。')
     sensitivity = options.get('eventSensitivity', 'standard')
-    if options.get('chordBackend', 'chordmini-btc') != 'chordmini-btc':
-        raise ValueError('コード推定はBTCのみ対応しています。')
-    if sensitivity not in ('standard', 'sensitive'):
-        raise ValueError('声の表現の検出感度が不正です。')
-    if region and (region.get('language') not in ('ja', 'en') or
-                   not 0 <= region['start'] < region['end'] <= project['duration']):
-        raise ValueError('再解析区間が不正です。')
-    if len(options.get('lyrics', '')) > 100000:
-        raise ValueError('歌詞が長すぎます。')
-    run_id = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S') + '-' + uuid.uuid4().hex[:8]
-    folder = root / 'runs' / run_id
-    folder.mkdir(parents=True)
-    write_json(folder / 'request.json', options)
-    previous = None
-    if project.get('currentRun'):
-        previous_file = within(root, 'runs/' + project['currentRun'] + '/result.json')
-        if previous_file.exists():
-            previous = read_json(previous_file)
-    project['currentRun'] = run_id
-    write_json(root / 'project.json', project)
-    result = copy.deepcopy(previous) if (region or events_only or harmony_only) and previous else {'tracks': {}, 'series': {}, 'stems': {}, 'engines': {}}
-    result['runId'] = run_id
-    if not (events_only or harmony_only) or 'mode' not in result:
-        result['mode'] = options['mode']
-    result['sourceHash'] = project['source']['sha256']
+    (root / 'cancel.flag').unlink(missing_ok=True)
+    def cancelled():
+        return (root / 'cancel.flag').exists() or (cancel_path is not None and Path(cancel_path).exists())
+    with file_lock(root / '.write.lock'):
+        run_id = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S') + '-' + uuid.uuid4().hex[:8]
+        folder = root / 'runs' / run_id
+        folder.mkdir(parents=True)
+        write_json(folder / 'request.json', options)
+        previous = None
+        if project.get('currentRun'):
+            previous_file = within(root, 'runs/' + project['currentRun'] + '/result.json')
+            if previous_file.exists():
+                previous = read_json(previous_file)
+        project['currentRun'] = run_id
+        write_json(root / 'project.json', project)
+        result = copy.deepcopy(previous) if (region or events_only or harmony_only) and previous else {'tracks': {}, 'series': {}, 'stems': {}, 'engines': {}}
+        result['runId'] = run_id
+        if not (events_only or harmony_only) or 'mode' not in result:
+            result['mode'] = options['mode']
+        result['sourceHash'] = project['source']['sha256']
     started, errors = time.monotonic(), []
     status = {'state': 'running', 'stage': '準備', 'progress': 0, 'errors': errors}
 
     def publish(stage, progress, state='running'):
-        if (root / 'cancel.flag').exists():
+        if cancelled():
             raise Cancelled()
         status.update(state=state, stage=stage, progress=progress, elapsed=time.monotonic() - started)
         write_json(folder / 'result.json', result)
         write_json(folder / 'status.json', status)
-        print(stage, flush=True)
+        print(stage, flush=True, file=sys.stderr)
 
     def attempt(stage, progress, action):
         publish(stage, progress)
@@ -96,7 +92,7 @@ def run(root, runtime, options):
         def analyze_harmony_signal(signal, sr, source):
             from chordmini import infer
             def check_cancel():
-                if (root / 'cancel.flag').exists():
+                if cancelled():
                     raise Cancelled()
             chords, engine = infer(audio, runtime, folder, duration, check_cancel)
             key = estimate_key(signal, sr, duration)
@@ -120,7 +116,7 @@ def run(root, runtime, options):
             last_update = 0.
             def update_progress(fraction):
                 nonlocal last_update
-                if (root / 'cancel.flag').exists():
+                if cancelled():
                     raise Cancelled()
                 now = time.monotonic()
                 if now - last_update >= 1 or fraction >= 1:

@@ -8,6 +8,8 @@ import os
 import shutil
 import statistics
 import uuid
+from locking import project_mutation, file_lock
+from control_errors import ConflictError
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -120,12 +122,13 @@ def validate_tracks(tracks, duration):
                 raise ValueError('時刻は曲の長さの範囲内で、終了を開始より後にしてください。')
 
 
+@project_mutation
 def save_edits(root, edits):
     root = Path(root)
     project = manifest(root)
     current = read_json(root / 'edits.json')
     if edits.get('revision') != current['revision']:
-        raise ValueError('別の保存が先に行われました。プロジェクトを開き直してください。')
+        raise ConflictError()
     validate_tracks(edits.get('tracks'), project['duration'])
     current = {'revision': current['revision'] + 1, 'tracks': edits['tracks']}
     (root / 'history').mkdir(exist_ok=True)
@@ -139,6 +142,11 @@ def effective_tracks(value):
 
 
 def delete_analysis(root):
+    with file_lock(Path(root) / '.analysis.lock'), file_lock(Path(root) / '.write.lock'):
+        return _delete_analysis(root)
+
+
+def _delete_analysis(root):
     root = Path(root).resolve()
     project = manifest(root)
     protected = [within(root, project['source']['path']), within(root, project['audio'])]

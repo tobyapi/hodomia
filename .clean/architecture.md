@@ -2,6 +2,8 @@
 
 React UI → src/api.ts → Tauri IPC → Rust workspace → Python CLI。
 
+自動操作はheadless.py → control.py → storage/jobs/pipeline。stdioの形式と業務操作を分離する。jobsは独立ワーカーと永続状態を所有し、lockingのOSファイルロックをGUI側の保存・解析にも適用する。project_libraryは既存のGUI登録ファイルを読み取る。
+
 - `App.tsx`: プロジェクト操作と画面の組み立て。`components/`: 時間軸と項目編集。`editing.ts` / `useEdits.ts`: 修正データとUndo/Redo。
 - `workspace.rs`: ネイティブ選択、許可済みパス、ワーカー起動・中止、ログ。MLライブラリをRust/UIへ直接持ち込まない。
 - `analysis/storage.py`: プロジェクト形式、原本コピー、修正履歴、書き出し。MLを読み込まず操作可能。
