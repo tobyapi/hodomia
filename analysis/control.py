@@ -44,7 +44,29 @@ class Control:
             self.root(value['root'])
             return self.jobs.cancel(args['jobId']) if operation == 'cancel_job' else value
         if operation == 'export_project':
-            return storage.export(self.root(args['root']))
+            from artifacts import Artifacts
+            root = self.root(args['root'])
+            value = storage.export(root)
+            artifacts = Artifacts(self.runtime)
+            value['artifacts'] = [artifacts.register(root, Path(value['path']) / name, mime)
+                                  for name, mime in [('analysis.json', 'application/json'), ('timeline.csv', 'text/csv'), ('lyrics.srt', 'text/plain')]]
+            return value
+        if operation == 'get_timeline':
+            from timeline_api import get_timeline
+            return get_timeline(self.root(args['root']), **{k: v for k, v in args.items() if k != 'root'})
+        if operation == 'update_segments':
+            from timeline_api import update_segments
+            return update_segments(self.root(args['root']), **{k: v for k, v in args.items() if k != 'root'})
+        if operation == 'extract_audio_clip':
+            from audio_clips import extract_clip
+            from artifacts import Artifacts
+            root = self.root(args['root'])
+            clip = extract_clip(root, **{k: v for k, v in args.items() if k != 'root'})
+            clip['artifact'] = Artifacts(self.runtime).register(root, clip['path'], 'audio/wav')
+            return clip
+        if operation == 'read_artifact':
+            from artifacts import Artifacts
+            return Artifacts(self.runtime).read(args['artifactId'], self.root)
         raise ControlError('UNKNOWN_OPERATION', '不明な操作です: ' + str(operation))
 
     def summary(self, root):

@@ -124,6 +124,10 @@ def validate_tracks(tracks, duration):
 
 @project_mutation
 def save_edits(root, edits):
+    return _save_edits(root, edits)
+
+
+def _save_edits(root, edits, mutation=None):
     root = Path(root)
     project = manifest(root)
     current = read_json(root / 'edits.json')
@@ -131,6 +135,8 @@ def save_edits(root, edits):
         raise ConflictError()
     validate_tracks(edits.get('tracks'), project['duration'])
     current = {'revision': current['revision'] + 1, 'tracks': edits['tracks']}
+    if mutation is not None:
+        current['lastMutation'] = mutation
     (root / 'history').mkdir(exist_ok=True)
     write_json(root / 'history' / f"edits-{current['revision']}.json", current)
     write_json(root / 'edits.json', current)
