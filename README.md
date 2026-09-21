@@ -93,6 +93,10 @@ npm run tauri:dev
 
 `npm ci` / `npm install` でGitのpre-commitフックを導入します。このチェックアウトで再設定する場合は `npm run hooks:install`。
 フックはステージ済みのソース全体、`npm run check:quality` とCIは作業ツリーを検査します。
+`npm run setup:quality` で固定版のRust解析ツールを導入します（初回はネット接続が必要）。
+pre-commitは複雑度・MIも検査し、pre-pushは `npm run analyze` で全解析を実行します。
+既存違反は `.clean/quality-baseline.json` に記録し、新規違反・悪化を禁止します。
+改善後は `npm run quality:prune` で許容値を縮めて一緒にコミットします。基準と操作は [品質ゲート](docs/quality-gate.md)。
 ソース（テスト・スクリプトを含む）の150行超は警告です。空行・コメントも行数に含めます。
 厳格に失敗させたい場合は `npm run check:quality -- --strict-length` を使います。
 既存の長いファイルも警告し、例外リストで隠しません。生成物・依存・モデル・音源は対象外です。
@@ -101,6 +105,7 @@ npm run tauri:dev
 
 | コマンド | 内容 |
 | --- | --- |
+| `npm run analyze` | 複雑度・MI・依存関係・Rust Clippy。JSONレポートを出力 |
 | `npm run check` | UI・編集、Python保存/DSP、型検査、ビルド、Rustテスト/Clippy |
 | `npm run tauri:build -- --no-bundle` | Windows実行ファイルの生成 |
 | `npm run tauri:build` | NSISインストーラーの生成 |

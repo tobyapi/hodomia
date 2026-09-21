@@ -13,9 +13,17 @@ jobs:
         with:
           components: rustfmt, clippy
       - run: npm ci
+      - run: npm run setup:quality
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - run: python -m pip install av==16.0.1 numpy==2.2.6 soundfile==0.13.1 librosa==0.11.0
       - run: npm run check
       - run: npm run tauri:build -- --no-bundle
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quality-reports
+          path: |
+            test-results/quality-gate.json
+            test-results/quality-metrics.json

@@ -11,7 +11,9 @@ componentsはApp/api/useCloseSaveに依存せず、操作をpropsで受け取る
 types/editingはtypesのみ、apiはtypes/Tauriのみを参照する。
 製品UIからテスト・Python・Rust・MCP実装への依存と、相対importの循環を禁止する。
 Rustは字句検査でlibraryからtauri/workspaceへの依存、Rust内MLライブラリ参照を禁止する。
-Rustの完全な依存グラフ、マクロ展開、別名経由や計算された動的importは検査しない。
+`npm run analyze` でdependency-cruiserによるTS依存解決・孤立モジュール検査、cargo-modulesによるRustの循環依存・孤立モジュール検査も実行する。
+Rustはライブラリ対象で検査する。計算された動的importなど静的解析で解決できない依存はレビューする。
+ESLint/SonarJSとrust-code-analysisの複雑度・MIを測り、既存違反は固定記録からの悪化を禁止する。数値・例外・フックの範囲は docs/quality-gate.md。
 これらは凝集度の代理指標であり、責務が一つかどうかはレビューでも確認する。
 
 ## 依存方向

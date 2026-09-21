@@ -13,5 +13,5 @@ if (process.env.CI) {
   }
   if (current && current !== ".githooks") throw new Error(`Existing hooksPath preserved: ${current}. Integrate .githooks/pre-commit manually.`);
   execFileSync("git", ["config", "--local", "core.hooksPath", ".githooks"], { cwd });
-  console.log("Installed .githooks/pre-commit (staged source quality check).");
+  console.log("Installed .githooks/pre-commit (staged metrics) and pre-push (full analysis).");
 }
