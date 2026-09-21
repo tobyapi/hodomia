@@ -1,0 +1,129 @@
+{
+  "[\"src-tauri/src/lib.rs\",\"file\",\"maintainability\",\"min\"]": [
+    35.884429879229636
+  ],
+  "[\"src-tauri/src/library.rs\",\"/list\",\"arguments\",\"max\"]": [
+    8
+  ],
+  "[\"src-tauri/src/library.rs\",\"/list\",\"cognitive\",\"max\"]": [
+    29
+  ],
+  "[\"src-tauri/src/library.rs\",\"/list\",\"cyclomatic\",\"max\"]": [
+    25
+  ],
+  "[\"src-tauri/src/library.rs\",\"/remember\",\"arguments\",\"max\"]": [
+    6
+  ],
+  "[\"src-tauri/src/library.rs\",\"file\",\"maintainability\",\"min\"]": [
+    21.685992277491607
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"/ack_ui_request\",\"arguments\",\"max\"]": [
+    8
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"/ack_ui_request\",\"cyclomatic\",\"max\"]": [
+    13
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"/call_worker\",\"arguments\",\"max\"]": [
+    6
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"/call_worker\",\"cyclomatic\",\"max\"]": [
+    14
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"/choose_path\",\"arguments\",\"max\"]": [
+    6
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"/choose_path\",\"cyclomatic\",\"max\"]": [
+    19
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"/choose_path/<anonymous>\",\"cyclomatic\",\"max\"]": [
+    16
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"/grant\",\"arguments\",\"max\"]": [
+    6
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"/saved_projects\",\"cyclomatic\",\"max\"]": [
+    14
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"/saved_projects/<anonymous>\",\"cyclomatic\",\"max\"]": [
+    11
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"/setup_runtime\",\"arguments\",\"max\"]": [
+    8
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"/setup_runtime\",\"cyclomatic\",\"max\"]": [
+    18
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"/stop_job\",\"arguments\",\"max\"]": [
+    6
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"/stop_job\",\"cyclomatic\",\"max\"]": [
+    13
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"/workspace_operation\",\"arguments\",\"max\"]": [
+    9
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"/workspace_operation\",\"cyclomatic\",\"max\"]": [
+    32
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"/workspace_operation/<anonymous>\",\"cyclomatic\",\"max\"]": [
+    29
+  ],
+  "[\"src-tauri/src/workspace.rs\",\"file\",\"maintainability\",\"min\"]": [
+    0
+  ],
+  "[\"src/App.test.tsx\",\"test callback\",\"max-statements\",\"max\"]": [
+    22
+  ],
+  "[\"src/App.tsx\",\"App\",\"complexity\",\"max\"]": [
+    111
+  ],
+  "[\"src/App.tsx\",\"App\",\"max-lines-per-function\",\"max\"]": [
+    247
+  ],
+  "[\"src/App.tsx\",\"App\",\"max-statements\",\"max\"]": [
+    58
+  ],
+  "[\"src/App.tsx\",\"App\",\"sonarjs/cognitive-complexity\",\"max\"]": [
+    49
+  ],
+  "[\"src/App.tsx\",\"App/useEffect callback\",\"max-lines-per-function\",\"max\"]": [
+    56
+  ],
+  "[\"src/App.tsx\",\"App/useEffect callback/refresh\",\"complexity\",\"max\"]": [
+    36
+  ],
+  "[\"src/App.tsx\",\"App/useEffect callback/refresh\",\"max-depth\",\"max\"]": [
+    4,
+    4,
+    4,
+    4,
+    4
+  ],
+  "[\"src/App.tsx\",\"App/useEffect callback/refresh\",\"max-statements\",\"max\"]": [
+    43
+  ],
+  "[\"src/App.tsx\",\"App/useEffect callback/refresh\",\"sonarjs/cognitive-complexity\",\"max\"]": [
+    43
+  ],
+  "[\"src/components/Inspector.tsx\",\"Inspector\",\"complexity\",\"max\"]": [
+    34
+  ],
+  "[\"src/components/Timeline.tsx\",\"Curve\",\"sonarjs/cognitive-complexity\",\"max\"]": [
+    11
+  ],
+  "[\"src/components/Timeline.tsx\",\"Timeline\",\"complexity\",\"max\"]": [
+    12
+  ],
+  "[\"src/components/Timeline.tsx\",\"Timeline/(Object.keys(TRACK_NAMES) as Track[]).filter(t => visible[t]).flatMap callback/groups.map callback/rows.filter(r => r.start !== null && r.end !== null).map callback\",\"complexity\",\"max\"]": [
+    13
+  ],
+  "[\"src/components/Timeline.tsx\",\"Timeline/(Object.keys(TRACK_NAMES) as Track[]).filter(t => visible[t]).flatMap callback/groups.map callback/rows.filter(r => r.start !== null && r.end !== null).map callback\",\"sonarjs/cognitive-complexity\",\"max\"]": [
+    11
+  ],
+  "[\"src/editing.ts\",\"beatGrid\",\"complexity\",\"max\"]": [
+    12
+  ],
+  "[\"src/editing.ts\",\"validRow\",\"complexity\",\"max\"]": [
+    14
+  ]
+}
