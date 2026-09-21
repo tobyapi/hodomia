@@ -23,7 +23,8 @@
     "setup:chordmini": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-chordmini.ps1",
     "setup:yamnet": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-yamnet.ps1",
     "harness:prepare": "node scripts/prepare-ui-harness.mjs",
-    "doctor": "node scripts/doctor.mjs"
+    "doctor": "node scripts/doctor.mjs",
+    "setup:melband": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-melband.ps1"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.0.0",

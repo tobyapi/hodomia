@@ -25,7 +25,8 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
     validate_options(options, project['duration'])
     region = options.get('region')
     events_only = options.get('scope') == 'vocal-events'
-    compare_events = options.get('scope') == 'vocal-comparison'
+    compare_separation = options.get('scope') == 'separation-comparison'
+    compare_events = options.get('scope') == 'vocal-comparison' or compare_separation
     harmony_only = options.get('scope') == 'harmony'
     sensitivity = options.get('eventSensitivity', 'standard')
     (root / 'cancel.flag').unlink(missing_ok=True)
@@ -96,6 +97,25 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
             result.pop('vocalComparisons', None)
             from vocal_comparison import compare
             paths = {name: within(root, path) for name, path in result.get('stems', {}).items()}
+            def check_comparison_cancel():
+                if cancelled():
+                    raise Cancelled()
+            if compare_separation:
+                def separate_comparison():
+                    from melband import separate as separate_melband
+                    from engines import release
+                    # Existing Demucs audio is retained, or generated if this song has none.
+                    if not paths.get('vocals'):
+                        paths.update(separate(audio, folder / 'stems', models, device))
+                        result['stems'] = {name: str(path.relative_to(root)).replace('\\', '/') for name, path in paths.items()}
+                        result['engines']['separation'] = 'htdemucs_ft / shifts=2 / overlap=.5'
+                    release()
+                    result['separationComparison'] = separate_melband(audio, root, runtime, folder, duration,
+                                                                     check_comparison_cancel, result.get('separationComparison'))
+                attempt('Demucs / Mel-Band の分離', .02, separate_comparison)
+                if errors:
+                    publish('分離比較に失敗しました', 1, 'partial')
+                    return
             def compare_voices():
                 last_update = 0.
                 def progress(fraction):
@@ -107,7 +127,12 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
                         publish(f'AST / YAMNet を比較 {round(fraction * 100)}%', .05 + .9 * fraction)
                         last_update = now
                 result['vocalComparisons'] = compare(audio, paths.get('vocals'), models, device, runtime,
-                                                    duration, folder, sensitivity, progress)
+                                                    duration, folder, sensitivity, progress,
+                                                    {name: within(root, path) for name, path in result.get('separationComparison', {}).get('stems', {}).items()
+                                                     if name == 'melband_vocals'})
+                if result.get('separationComparison'):
+                    result['vocalComparisons']['engines']['separation'] = result['separationComparison']['engine']
+                    write_json(folder / 'vocal-comparison.json', result['vocalComparisons'])
             attempt('AST / YAMNet の比較', .05, compare_voices)
             publish('声の比較に失敗しました' if errors else '声の比較完了', 1, 'partial' if errors else 'complete')
             return

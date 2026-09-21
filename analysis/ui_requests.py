@@ -7,6 +7,7 @@ from control_errors import ControlError
 from locking import file_lock
 from storage import snapshot, read_json, write_json, TRACKS
 from timeline_api import time_range
+from playback_sources import stems
 
 
 class UiRequests:
@@ -31,7 +32,7 @@ class UiRequests:
     def enqueue(self, root, start=0, end=None, stem='original', track='chords'):
         value = snapshot(root)
         start, end = time_range(start, end, value['project']['duration'])
-        if track not in TRACKS or (stem != 'original' and stem not in value['result'].get('stems', {})):
+        if track not in TRACKS or (stem != 'original' and stem not in stems(value['result'])):
             raise ValueError('トラックまたは音声が不正です。')
         request_id = uuid.uuid4().hex
         request = dict(requestId=request_id, root=str(Path(root).resolve()), start=start, end=end,

@@ -5,6 +5,7 @@ from pathlib import Path
 from locking import file_lock
 from storage import snapshot, within
 from timeline_api import time_range
+from playback_sources import stems
 
 
 def extract_clip(root, start, end, stem='original'):
@@ -15,7 +16,7 @@ def extract_clip(root, start, end, stem='original'):
         start, end = time_range(start, end, value['project']['duration'])
         if end - start > 30:
             raise ValueError('音声切り出しは1回30秒以内で指定してください。')
-        relative = value['project']['audio'] if stem == 'original' else value['result'].get('stems', {}).get(stem)
+        relative = value['project']['audio'] if stem == 'original' else stems(value['result']).get(stem)
         if not relative:
             raise ValueError('指定した分離音声がありません。')
         source = within(root, relative)

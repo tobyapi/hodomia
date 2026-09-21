@@ -62,7 +62,7 @@ def candidates(frames, duration, sensitivity='standard'):
     return rows
 
 
-def detect(audio, vocal, models, device, duration, folder, sensitivity='standard', progress=None, beatbox_recall=True):
+def detect(audio, vocal, models, device, duration, folder, sensitivity='standard', progress=None, beatbox_recall=True, extra_sources=None):
     import librosa
     import torch
     from transformers import ASTFeatureExtractor, ASTForAudioClassification
@@ -82,6 +82,7 @@ def detect(audio, vocal, models, device, duration, folder, sensitivity='standard
     sources = {'original': audio}
     if vocal:
         sources['vocals'] = vocal
+    sources.update(extra_sources or {})
     times = np.arange(0, duration, HOP)
     frames = [{'time': round(float(t), 4), 'events': {name: {'score': 0., 'source': 'original', 'class': ''}
                                                    for name in EVENTS}} for t in times]

@@ -4,6 +4,7 @@ from control_errors import ControlError
 from jobs import Jobs
 from project_library import canonical, default_projects, default_registry, list_projects, registered, remember
 import storage
+from playback_sources import stems
 
 
 class Control:
@@ -88,4 +89,4 @@ class Control:
         return dict(root=str(canonical(root)), project=value['project'], revision=value['edits']['revision'],
                     status=value['status'], engines=value['result'].get('engines', {}),
                     tracks={name: {'count': len(rows), 'unreviewed': sum(not row.get('reviewed', False) for row in rows)} for name, rows in tracks.items()},
-                    stems=list(value['result'].get('stems', {})))
+                    stems=list(stems(value['result'])))

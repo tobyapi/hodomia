@@ -46,17 +46,18 @@ def variant(model, source, frames, window, hop, onset, offset):
                 hopSeconds=hop, thresholds=thresholds, frames=frames, candidates=sorted(rows, key=lambda r: r['start']))
 
 
-def compare(audio, vocal, models, device, runtime, duration, folder, sensitivity, progress):
+def compare(audio, vocal, models, device, runtime, duration, folder, sensitivity, progress, extra_sources=None):
     from vocal_events import detect, WINDOW, HOP, THRESHOLDS
     from engines import release
     from yamnet import infer
     _, ast_engine = detect(audio, vocal, models, device, duration, folder, sensitivity,
-                           progress=lambda f: progress(f * .7), beatbox_recall=False)
+                           progress=lambda f: progress(f * .7), beatbox_recall=False, extra_sources=extra_sources)
     evidence = read_json(Path(folder) / 'vocal-events-evidence.json')
     variants = [variant('ast', source, frames, WINDOW, HOP, THRESHOLDS[sensitivity], THRESHOLDS[sensitivity])
                 for source, frames in evidence['sourceFrames'].items()]
     release()
     sources = {'original': audio, **({'vocals': vocal} if vocal else {})}
+    sources.update(extra_sources or {})
     yamnet_result = infer(sources, runtime, folder, duration, lambda: progress(.7))
     for source, frames in yamnet_result['sources'].items():
         variants.append(variant('yamnet', source, frames, .975, .48, .15, .1))
