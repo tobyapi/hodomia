@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "headless": "node scripts/headless.mjs",
+    "mcp": "node automation/mcp-server.mjs",
+    "mcp:config": "node scripts/mcp-config.mjs",
+    "test:automation": "node --test automation/tests/*.test.mjs",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
@@ -14,7 +17,7 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "check:rust": "cargo fmt --manifest-path src-tauri/Cargo.toml -- --check && cargo test --locked --manifest-path src-tauri/Cargo.toml && cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings",
-    "check": "npm run test && npm run test:analysis && npm run build && npm run check:rust",
+    "check": "npm run test && npm run test:analysis && npm run test:automation && npm run build && npm run check:rust",
     "test:analysis": "node scripts/test-analysis.mjs",
     "setup:analysis": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-analysis.ps1",
     "setup:chordmini": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-chordmini.ps1",
@@ -22,11 +25,14 @@
     "doctor": "node scripts/doctor.mjs"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "2.0.0",
     "@tauri-apps/api": "^2.8.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zod": "4.6.5"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "2.0.0",
     "@tauri-apps/cli": "^2.8.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",

@@ -7,5 +7,5 @@ export default defineConfig({
   server: { host: "127.0.0.1", port: 1430, strictPort: true, watch: { ignored: ["**/src-tauri/**", "**/.runtime/**", "**/test-results/**", "**/projects/**"] } },
   envPrefix: ["VITE_", "TAURI_ENV_"],
   build: { target: "chrome105", sourcemap: !!process.env.TAURI_ENV_DEBUG },
-  test: { environment: "jsdom", setupFiles: ["./src/test/setup.ts"] },
+  test: { environment: "jsdom", setupFiles: ["./src/test/setup.ts"], include: ["src/**/*.test.{ts,tsx}"] },
 });

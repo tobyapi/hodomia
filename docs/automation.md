@@ -44,3 +44,20 @@ start_analysisはjobIdを返し、解析は独立プロセスで継続します�
 ```
 
 dryRunでは差分だけを返す。実際に適用する場合はfalseにし、同じrequestIdの同じ要求を再送しても二重適用しない。別内容で同じrequestIdを再利用するとCONFLICT。変更前後の行は応答とhistory/operationsへ、適用後の全手修正は従来のhistory/edits-N.jsonへ保存する。解析中の行単位変更・音声切り出しはBUSYになる。自動結果や未指定トラックは書き換えない。
+# MCP接続
+
+Node.js 20以上で `node automation/mcp-server.mjs` を起動します。標準入出力はMCP専用です。クライアントのcommandにnpmを指定せず、Node実行ファイルとスクリプトの絶対パスを指定してください。
+
+接続設定は次で生成できます（ユーザーのMCP設定を自動上書きしません）。
+
+```powershell
+node scripts/mcp-config.mjs --allow-root "$env:USERPROFILE\Downloads"
+```
+
+出力された `mcpServers` 設定を利用するクライアントに登録します。`--runtime`、`--projects`、`--registry` も指定でき、許可フォルダーは `--allow-root` の繰り返しで追加します。登録済みプロジェクトは読み書き可能ですが、新規音源の取り込みには音源フォルダーの明示的な許可が必要です。
+
+MCPツールは `list_projects`、`import_audio`、`get_project`、`start_analysis`、`get_job`、`cancel_job`、`get_timeline`、`update_segments`、`extract_audio_clip`、`export_project`。JSONの構造化結果とエラーコードを返します。削除ツールや任意コマンド実行ツールはありません。
+
+クリップ・書き出しの戻り値にある `music-sweeper://artifact/<id>` はMCPリソースとして読み取れます。生成物として登録したファイルだけが対象で、任意のファイルパスは受け付けません。1リソース16MiBまでです。解析は `start_analysis` → `get_job` で追跡し、完了してから時間範囲・トラックを指定して読み出します。スコアは正解率に変換せず、未確認フラグも保持します。
+
+接続テストは `npm run test:automation`。公式SDKクライアントから別プロセスのサーバーへ接続し、取り込み・範囲取得・編集の再送と競合・音声リソース・CSV・許可範囲を確認します。
