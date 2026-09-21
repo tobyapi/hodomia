@@ -7,6 +7,7 @@ import math
 import os
 import shutil
 import statistics
+import time
 import uuid
 from locking import project_mutation, file_lock
 from control_errors import ConflictError
@@ -22,7 +23,15 @@ def write_json(path, value):
     temporary = path.with_name(path.name + '.' + uuid.uuid4().hex + '.tmp')
     try:
         temporary.write_text(json.dumps(value, ensure_ascii=False, allow_nan=False, indent=2), encoding='utf-8')
-        os.replace(temporary, path)
+        # Windows readers briefly hold the destination without FILE_SHARE_DELETE.
+        for attempt in range(6):
+            try:
+                os.replace(temporary, path)
+                break
+            except PermissionError as error:
+                if getattr(error, 'winerror', None) not in (5, 32, 33) or attempt == 5:
+                    raise
+                time.sleep(.02 * (attempt + 1))
     finally:
         temporary.unlink(missing_ok=True)
 

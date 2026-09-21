@@ -1,7 +1,9 @@
 import copy
 import tempfile
 import unittest
+import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import numpy as np
 import soundfile as sf
 from melband import cached_result, digest, validate_outputs, verify, FILES
