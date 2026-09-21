@@ -26,6 +26,9 @@ class Control:
             raise ValueError('argsはJSONオブジェクトで指定してください。')
         if operation == 'list_projects':
             return {'projects': list_projects(self.projects, self.registry)}
+        if operation == 'capture_app':
+            from screenshots import capture
+            return capture(self.runtime, **args)
         if operation == 'import_audio':
             source = canonical(args['source'])
             if not any(source.is_relative_to(p) for p in self.allowed):

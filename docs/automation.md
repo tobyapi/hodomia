@@ -56,7 +56,7 @@ node scripts/mcp-config.mjs --allow-root "$env:USERPROFILE\Downloads"
 
 出力された `mcpServers` 設定を利用するクライアントに登録します。`--runtime`、`--projects`、`--registry` も指定でき、許可フォルダーは `--allow-root` の繰り返しで追加します。登録済みプロジェクトは読み書き可能ですが、新規音源の取り込みには音源フォルダーの明示的な許可が必要です。
 
-MCPツールは `list_projects`、`import_audio`、`get_project`、`start_analysis`、`get_job`、`cancel_job`、`get_timeline`、`update_segments`、`extract_audio_clip`、`export_project`。JSONの構造化結果とエラーコードを返します。削除ツールや任意コマンド実行ツールはありません。
+MCPツールは `list_projects`、`import_audio`、`get_project`、`start_analysis`、`get_job`、`cancel_job`、`get_timeline`、`update_segments`、`extract_audio_clip`、`export_project`、`show_in_app`、`get_ui_request`、`capture_app`。JSONの構造化結果とエラーコードを返します。削除ツールや任意コマンド実行ツールはありません。
 
 クリップ・書き出しの戻り値にある `music-sweeper://artifact/<id>` はMCPリソースとして読み取れます。生成物として登録したファイルだけが対象で、任意のファイルパスは受け付けません。1リソース16MiBまでです。解析は `start_analysis` → `get_job` で追跡し、完了してから時間範囲・トラックを指定して読み出します。スコアは正解率に変換せず、未確認フラグも保持します。
 
@@ -75,3 +75,25 @@ AIによる保存済みの変更は、未保存の作業がなければGUIへ反
 範囲取得と書き出しも解析中はBUSYになります。結果をページングする場合は解析の完了を待ち、revision/runIdを渡してください。中断された過去の解析はget_jobでinterrupted、過去の完了ジョブはそのジョブ固有のrunIdと進捗を返します。
 
 実モデルを含む検証は `node scripts/verify-automation.mjs <検証用プロジェクトフォルダー> ...`。指定したプロジェクトにBTCの新しいrunを作り、MCP経由の完了追跡、コード取得、音源・手修正・対象外トラックの保持を確認します。通常の `npm run check` はモデル推論を実行しません。
+
+## アプリのスクリーンショット
+
+Windows版のMusic Sweeperを開いて、次を実行します。GUIとCLI・MCPの`runtime`は同じフォルダーを指定してください。撮影だけではGUIの起動、曲の切り替え、テーマ変更、再生、保存は行いません。
+
+```powershell
+node scripts/headless.mjs capture_app
+```
+
+標準入力で待ち時間を指定する場合：
+
+```json
+{"operation":"capture_app","args":{"timeoutSeconds":10}}
+```
+
+`timeoutSeconds`は省略時10秒、指定範囲1〜30秒。成功時は`value`に`captureId`、`path`、`mimeType: "image/png"`、`width`、`height`、`blob`（base64）を返します。MCPではbase64をJSONから除き、`image`コンテンツとして返すので、画像対応クライアントがそのまま表示できます。
+
+撮影には[xcap 0.9.8](https://github.com/nashaofu/xcap/tree/v0.9.8)を使用します。子プロセスの撮影ヘルパーは親が同じ実行ファイルのMusic Sweeperであることを検証し、親のプロセスIDとメインウィンドウのIDが一致するウィンドウだけを撮影します。画面全体、他アプリ、任意の保存先は指定できません。未保存の内容や表示中の曲名・パスも写ります。画像を外部へ共有する前に内容を確認してください。
+
+PNGは`runtime/control/screenshots/<captureId>.png`に残ります。不要な画像はこのフォルダーから削除できます。画像は最大16,000,000バイト。上限を超えた場合は`TOO_LARGE`になります。GUIの未起動や応答待ち時間超過は`GUI_TIMEOUT`、最小化やOSの撮影失敗は`CAPTURE_FAILED`です。撮影要求は期限切れ後に持ち越しません。複数のGUIを使う場合はruntimeを分けてください。
+
+指定曲を撮りたい場合は`show_in_app` → `get_ui_request`で`applied`を確認 → `capture_app`の順で実行します。撮影は現在の表示範囲だけで、縦にスクロールした全体画像ではありません。

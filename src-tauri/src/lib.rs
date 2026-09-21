@@ -1,24 +1,8 @@
-#[derive(serde::Serialize)]
-struct RuntimeInfo {
-    name: &'static str,
-    version: &'static str,
-    runtime: &'static str,
-}
-
-#[tauri::command]
-fn runtime_info() -> RuntimeInfo {
-    RuntimeInfo {
-        name: "Music Sweeper",
-        version: env!("CARGO_PKG_VERSION"),
-        runtime: "Tauri",
-    }
-}
-
 fn app_builder<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
     builder
         .manage(workspace::Workspace::default())
         .invoke_handler(tauri::generate_handler![
-            runtime_info,
+            runtime_info::runtime_info,
             workspace::selection::choose_path,
             workspace::operations::workspace_operation,
             workspace::analysis_jobs::start_analysis,
@@ -36,6 +20,10 @@ fn app_builder<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<
 
 pub fn run() {
     app_builder(tauri::Builder::default())
+        .setup(|app| {
+            workspace::screenshots::start(app.handle().clone())?;
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("failed to run Music Sweeper");
 }
@@ -47,3 +35,11 @@ mod library;
 mod workspace;
 
 mod errors;
+
+#[cfg(windows)]
+mod capture_helper;
+
+#[cfg(windows)]
+pub use capture_helper::run_if_requested;
+
+mod runtime_info;

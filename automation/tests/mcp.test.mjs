@@ -23,6 +23,9 @@ test('real stdio MCP: import, bounded reads, CAS edits, clips, exports and permi
   try {
     await client.connect(transport);
     assert.ok((await client.listTools()).tools.some(t => t.name === 'update_segments'));
+    const unavailable = await client.callTool({ name: 'capture_app', arguments: { timeoutSeconds: 1 } });
+    assert.equal(unavailable.isError, true);
+    assert.equal(unavailable.structuredContent.error.code, 'GUI_TIMEOUT');
     const call = async (name, args = {}) => {
       const result = await client.callTool({ name, arguments: args });
       assert.equal(result.isError, false, JSON.stringify(result));

@@ -47,4 +47,8 @@ pub(crate) mod library_removal;
 mod process_control;
 mod result_registration;
 mod runtime_paths;
+mod screenshot_request;
+mod screenshot_response;
+pub(crate) mod screenshots;
+mod window_capture;
 mod window_focus;

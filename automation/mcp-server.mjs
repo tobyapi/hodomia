@@ -3,6 +3,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
 import * as z from 'zod/v4';
 import { configuration, workerClient } from './worker-client.mjs';
 import { definitions } from './tool-definitions.mjs';
+import { toolResponse } from './tool-response.mjs';
 
 const call = workerClient(configuration());
 const server = new McpServer({ name: 'music-sweeper', version: '0.1.0' });
@@ -14,13 +15,7 @@ for (const [name, description, shape, readOnly] of definitions) {
     let response;
     try { response = await call(name, args); }
     catch (error) { response = { schemaVersion: 1, ok: false, error: { code: 'BRIDGE_ERROR', message: error.message } }; }
-    const artifacts = response.ok ? response.value.artifacts ?? (response.value.artifact ? [response.value.artifact] : []) : [];
-    return {
-      isError: !response.ok, structuredContent: response,
-      content: [{ type: 'text', text: JSON.stringify(response) }, ...artifacts.map(item => ({
-        type: 'resource_link', uri: item.uri, name: item.artifactId, mimeType: item.mimeType,
-      }))],
-    };
+    return toolResponse(response);
   });
 }
 server.registerResource('artifact', new ResourceTemplate('music-sweeper://artifact/{artifactId}', { list: undefined }),

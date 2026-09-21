@@ -43,3 +43,4 @@ MCPはautomation/mcp-server.mjs → worker-client.mjs → headless.py。公式SD
 - `components/ChordControls.tsx`: BTC固定の再推定操作と旧解析結果の案内。方式選択はなく、pipelineは新しいコード解析でchordComparisonsを生成しない。旧runsと手修正は保持し、コード解析に失敗しても従来方式へフォールバックしない。
 
 - 表示テーマ: `components/ThemeSwitch.tsx` がライト／ダークの選択と設定保存を担当し、`theme.css` の変数で画面とSVGの配色を統一する。
+- ウィンドウ撮影: `analysis/screenshots.py`が期限付き要求を保存し、Rustの`workspace/screenshots`が受信する。`window_capture`は同じ実行ファイルを撮影ヘルパーとして起動する。`capture_helper`は親プロセスの実行ファイルを検証し、親のメインウィンドウだけをxcapで撮影する。`screenshot_response`がPNGの寸法またはエラーを応答し、MCPの`tool-response.mjs`がPNGを画像コンテンツへ変換する。撮影はReactの編集状態や解析ジョブから独立する。

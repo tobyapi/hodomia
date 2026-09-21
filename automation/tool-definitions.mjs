@@ -14,6 +14,7 @@ const options = z.strictObject({
 });
 
 export const definitions = [
+  ['capture_app', 'Capture only the running Music Sweeper main window as PNG. Windows only; GUI must use the same runtime and not be minimized. Returns an image and local PNG path. Visible song names and edits are included. Does not change the GUI or capture other apps.', { timeoutSeconds: z.number().min(1).max(30).optional() }, true],
   ['show_in_app', 'Queue a song/time range for display in Music Sweeper. Open the desktop app to receive it. No auto-play. Unsaved GUI edits defer it. Expires after 10 minutes; use get_ui_request to confirm applied status.', { root, start: seconds.optional(), end: seconds.optional(), stem: z.string().optional(), track: track.optional() }, false],
   ['get_ui_request', 'Check whether show_in_app was applied, remains queued, failed or expired.', { requestId: z.string() }, true],
   ['list_projects', 'List saved songs. No audio or complete timeline is returned.', {}, true],
