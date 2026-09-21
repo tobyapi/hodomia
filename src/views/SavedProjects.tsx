@@ -1,0 +1,7 @@
+import { timeLabel } from "../editing";
+import type { WorkspaceModel } from "../workspace/useWorkspace";
+
+export function SavedProjects({ model }: { model: WorkspaceModel }) {
+  const { savedProjects, setSavedProjects, setDeleteTarget, guarded, editor, locked, desktop, api, install, save } = model;
+  return <><section className="saved-projects" aria-label="保存した曲"><div className="saved-projects-heading"><strong>保存した曲</strong><button disabled={!desktop || locked} onClick={() => void guarded(async () => setSavedProjects(await api.savedProjects()))}>更新</button></div><p className="muted">解析結果は自動保存されます。曲を選ぶと続きから開けます。</p><div className="saved-project-list">{savedProjects.map(project => <div className="saved-project-item" key={project.root}><button title={project.root} disabled={locked} aria-label={project.name + "を開く"} onClick={() => void guarded(async () => { if (editor.dirty) await save(); install(await api.openProject(project.root)); })}><strong>{project.name}</strong><small>{timeLabel(project.duration)} · {project.hasAnalysis ? "解析履歴あり" : "未解析"}</small><small>{project.createdAt ? new Date(project.createdAt).toLocaleString("ja-JP") : ""}</small></button><button className="remove-saved" disabled={locked} aria-label={project.name + "を削除"} title="解析データを削除" onClick={() => setDeleteTarget(project)}>×</button></div>)}</div>{!savedProjects.length && <p className="muted">保存した曲はまだありません。別の場所のデータは「プロジェクトを開く」で追加できます。</p>}</section></>;
+}
