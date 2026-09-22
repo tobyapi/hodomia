@@ -2,6 +2,8 @@
 
 [READMEへ戻る](../README.md) · [開発ルール](../AGENTS.md) · [同梱スキル](bundled-skills.md)
 
+OS別の配布ビルドとGitHub Releasesへの公開は[リリース手順](releases.md)を参照してください。
+
 Tauri 2 + React 19 + TypeScriptのWindows向けアプリです。コーディングエージェントはAGENTS.mdと同梱スキルを読み、この手順で環境を準備してください。
 
 ## 開発環境の準備

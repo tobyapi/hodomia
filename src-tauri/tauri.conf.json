@@ -31,7 +31,9 @@
       "nsis"
     ],
     "icon": [
-      "icons/icon.ico"
+      "icons/icon.ico",
+      "icons/icon.icns",
+      "icons/icon.png"
     ],
     "category": "Music",
     "resources": { "../analysis/": "analysis/", "../scripts/setup-analysis.ps1": "scripts/setup-analysis.ps1", "../scripts/setup-chordmini.ps1": "scripts/setup-chordmini.ps1", "../scripts/runtime-lock.ps1": "scripts/runtime-lock.ps1" },

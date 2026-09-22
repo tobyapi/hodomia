@@ -14,6 +14,7 @@ from control_errors import BusyError, ConflictError, ControlError
 from locking import file_lock
 from process_identity import process_identity
 from storage import save_edits, snapshot, write_json
+from worker_cleanup import remove_worker_log
 
 
 class ControlTests(unittest.TestCase):
@@ -40,6 +41,7 @@ class ControlTests(unittest.TestCase):
     def tearDown(self):
         for job_id in self.worker_jobs:
             self.wait_for_worker_exit(job_id)
+            remove_worker_log(self.service.jobs.path(job_id).with_suffix('.log'))
         self.temp.cleanup()
 
     def wait_for_worker_exit(self, job_id):

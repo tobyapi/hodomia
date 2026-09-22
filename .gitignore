@@ -9,3 +9,5 @@ projects/
 analysis/__pycache__/
 analysis/tests/__pycache__/
 test-results/
+downloaded-artifacts/
+release-assets/

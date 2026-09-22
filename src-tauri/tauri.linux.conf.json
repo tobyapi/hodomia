@@ -1,0 +1,7 @@
+{
+  "bundle": {
+    "targets": ["deb", "appimage"],
+    "shortDescription": "Local music analysis workspace",
+    "longDescription": "Inspect beats, lyrics, chords and pitch on a shared timeline. Linux builds are experimental; automatic analysis setup is currently available on Windows only."
+  }
+}

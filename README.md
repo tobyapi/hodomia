@@ -4,9 +4,15 @@
 
 初回セットアップ後の解析はローカルで実行します。自動推定には誤りや未確定の情報が含まれるため、試聴して確認・修正してください。
 
+## ダウンロード
+
+[最新版のダウンロード（GitHub Releases）](https://github.com/tobyapi/hodomia/releases/latest)から、使うOSのファイルを選んでください。
+
+音源解析はWindows x64版で利用できます。macOS（Apple Silicon / Intel）とLinux x64版は実験的なUIビルドで、解析環境のセットアップと音源解析は未対応です。配布形式や署名の状態は[リリース](docs/releases.md)に記載しています。
+
 ## はじめる
 
-このリポジトリをコーディングエージェントで開き、次のプロンプトを渡してください。初回は依存パッケージとモデルをダウンロードするため、ネット接続と数十GBの空き容量が必要です。
+セットアップをコーディングエージェントに依頼する場合は、このリポジトリを開いて次のプロンプトを渡してください。初回は依存パッケージとモデルをダウンロードするため、ネット接続と数十GBの空き容量が必要です。
 
 ```text
 hodomiaをこのWindows環境で使えるようにセットアップし、デスクトップアプリを起動してください。
@@ -64,4 +70,5 @@ AGENTS.md、.clean/architecture.md、docs/development.mdを読み、同梱スキ
 - [CLI・MCPによる自動操作](docs/automation.md)：接続設定、操作の引数、アプリの撮影
 - [出力JSONとプロジェクト形式](docs/json-format.md)
 - [開発環境と検証](docs/development.md)：依存関係、セットアップ、ビルド、開発ハーネス
+- [リリース](docs/releases.md)：OS別のビルド、タグによるGitHub Releasesへの公開
 - [同梱スキル](docs/bundled-skills.md) / [品質ゲート](docs/quality-gate.md) / [構成](.clean/architecture.md) / [検証記録](docs/verification.md)
