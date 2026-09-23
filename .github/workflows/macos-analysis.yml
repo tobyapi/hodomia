@@ -37,3 +37,17 @@ jobs:
       - run: sh scripts/setup-macos.sh test-results/chordmini-runtime chordmini
       - run: test -s test-results/chordmini-runtime/chordmini/installation.json
       - run: python scripts/smoke-chordmini-macos.py test-results/chordmini-runtime
+
+  full-setup:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install uv==0.9.22
+      - run: df -h .
+      - run: sh scripts/setup-macos.sh test-results/full-runtime full
+      - run: test -s test-results/full-runtime/ready.json
