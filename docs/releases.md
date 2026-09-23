@@ -35,11 +35,11 @@ Windowsの共通チェックは `.github/workflows/check.yml`、Apple Siliconの
 2. `docs/release-notes.md`をそのリリースの説明に更新し、変更をコミット・pushします。
 3. 手動ビルドで配布物を確認した後、同じコミットにバージョンタグを付けてpushします。
 
-例として、バージョンが `0.1.0` の場合は次の操作です。
+例として、バージョンが `0.1.1` の場合は次の操作です。
 
 ```powershell
-git tag -a v0.1.0 -m "hodomia v0.1.0"
-git push origin v0.1.0
+git tag -a v0.1.1 -m "hodomia v0.1.1"
+git push origin v0.1.1
 ```
 
 `v*`タグのpushで起動し、タグとnpm・Tauri・Cargoのバージョンが一致しなければビルド前に失敗します。

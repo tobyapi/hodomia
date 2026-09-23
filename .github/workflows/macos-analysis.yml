@@ -36,3 +36,4 @@ jobs:
       - run: python -m pip install uv==0.9.22
       - run: sh scripts/setup-macos.sh test-results/chordmini-runtime chordmini
       - run: test -s test-results/chordmini-runtime/chordmini/installation.json
+      - run: python scripts/smoke-chordmini-macos.py test-results/chordmini-runtime
