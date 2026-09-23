@@ -216,3 +216,11 @@ ASTは開始/継続0.15、YAMNetは開始0.15/継続0.10の仮基準。通常の
 ブラウザーハーネスで実曲の4系列、分類切り替えを確認。YAMNetボーカルのハミング候補を押し、音声がvocals.wav、位置8.16秒、ループON、再生停止のままであることをDOMと実音声要素で確認した。これはブラウザーハーネスのUI検証で、ネイティブ画面の操作検証ではない。
 
 `npm run check`成功（UI38、Python47、MCP統合1、Rust2、合計88件）。TypeScript/Vite、rustfmt/clippy成功。`npm run tauri:build -- --no-bundle`成功。ログはtest-results/yamnet-stage2-check.log、yamnet-framing-check.log、yamnet-real-songs.log、yamnet-native-build.log。モデル・実曲・比較JSONはGitに含めない。
+
+## 2026-09-23 Apple Silicon版
+
+[Mac解析のCI](https://github.com/tobyapi/hodomia/actions/runs/35803881689)で、固定依存のインストール、Pythonテスト、BTCモデルのセットアップと合成音の推論、全解析モデルの初回取得を確認した。12秒の合成音を取り込んでインストゥルメンタルモードで解析し、分離、拍、コード、構成、声の表現、音高を経て `complete`、エラー0件となった。音源・モデル・結果ファイルはGitに追加していない。
+
+[v0.1.1の公開前ビルド](https://github.com/tobyapi/hodomia/actions/runs/35803676812)で、Windows x64、Mac Apple Silicon / Intel、Linux x64のインストーラー5本とSHA-256一覧を生成した。Apple Silicon DMGのアプリ内に `analysis/setup_macos.py`、Mac用の固定依存と `scripts/setup-macos.sh` があることも確認した。合成音のCIは推定精度やユーザーのMac上での画面操作を評価するものではない。
+
+[追加のMac解析CI](https://github.com/tobyapi/hodomia/actions/runs/35804669571)でも曲全体の解析を再実行し、日本語用の音声認識と時刻合わせモデルをApple Silicon上で読み込んで合成音を処理した。歌詞の推定精度は評価していない。

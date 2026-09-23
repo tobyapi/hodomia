@@ -10,10 +10,10 @@ v0.1.1ではApple Silicon搭載Macの音源解析に対応しました。v0.1.0�
 | `*amd64.deb` | Linux x64、Debian / Ubuntu |
 | `*amd64.AppImage` | Linux x64、AppImage |
 
-Mac上でPython依存のインストール、解析コードのテスト、BTCコードモデルによる合成音の推論を確認しています。Intel MacとLinux版は実験的なUIビルドで、解析は利用できません。
+Apple Silicon上で解析環境の初回セットアップ、合成音を使った曲全体の解析完了、BTCコード推論、日本語の音声認識・時刻合わせモデルの実行を確認しています。Intel MacとLinux版は実験的なUIビルドで、解析は利用できません。
 
 WindowsとApple Silicon搭載Macではインストール後にhodomiaを起動し、「初回セットアップ」を実行してください。
-事前にコマンドとして呼び出せるuvとGitを用意し、ネット接続と数十GBの空き容量を確保してください。
+事前に[uv](https://docs.astral.sh/uv/getting-started/installation/)とGitを用意し、ネット接続と数十GBの空き容量を確保してください。MacではCPUで推論するため、解析に時間がかかります。
 モデルはこのセットアップ時に取得し、その後の解析はローカルで実行します。[セットアップの手順](https://github.com/tobyapi/hodomia/blob/main/docs/development.md#開発環境の準備)
 
 LinuxのAppImageは、ダウンロード後に実行権限を付けて起動してください。
