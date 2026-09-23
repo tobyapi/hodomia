@@ -1,6 +1,7 @@
 """Shared saved-project discovery; accepts the existing desktop registry files."""
 import hashlib
 import os
+import sys
 from pathlib import Path
 from storage import manifest, read_json, write_json
 
@@ -25,6 +26,8 @@ def default_projects():
 
 
 def default_registry():
+    if sys.platform == 'darwin':
+        return Path.home() / 'Library/Application Support/app.hodomia.desktop/library'
     return Path(os.environ.get('APPDATA', Path.home() / '.local/share')) / 'app.hodomia.desktop/library'
 
 

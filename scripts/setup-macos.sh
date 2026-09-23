@@ -15,5 +15,6 @@ if ! command -v git >/dev/null 2>&1; then
 fi
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+uv python install 3.11
 python=$(uv python find --managed-python 3.11)
 exec "$python" "$script_dir/../analysis/setup_macos.py" "$@"
