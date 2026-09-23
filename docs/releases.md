@@ -28,6 +28,7 @@ GitHubのActionsから `Release` → `Run workflow` を選び、対象ブラン�
 
 ビルドは解析モデルやユーザーの音源を取得しません。
 Windowsの共通チェックは `.github/workflows/check.yml`、Apple Siliconの解析依存とPythonテストは `.github/workflows/macos-analysis.yml` を呼び出します。
+Macで全モデルの初回取得まで試す場合は `Mac analysis` を手動起動し、`run-full-setup` を有効にします。通常のリリースビルドはモデルを取得しません。
 
 ## タグで公開する
 

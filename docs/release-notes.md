@@ -1,3 +1,5 @@
+v0.1.1ではApple Silicon搭載Macの音源解析に対応しました。v0.1.0のMac版はUIのみで、解析の操作をしても完了しませんでした。Macで解析する場合はv0.1.1の `*aarch64.dmg` に更新してください。
+
 使うOSに合わせて、下のAssetsからファイルをダウンロードしてください。
 
 | ファイル | 対象 |
@@ -8,7 +10,7 @@
 | `*amd64.deb` | Linux x64、Debian / Ubuntu |
 | `*amd64.AppImage` | Linux x64、AppImage |
 
-Apple Silicon搭載Macで解析環境のセットアップと音源解析を利用できるようにしました。Mac上でPython依存のインストールと解析コードのテストを確認しています。Intel MacとLinux版は実験的なUIビルドで、解析は利用できません。
+Mac上でPython依存のインストール、解析コードのテスト、BTCコードモデルによる合成音の推論を確認しています。Intel MacとLinux版は実験的なUIビルドで、解析は利用できません。
 
 WindowsとApple Silicon搭載Macではインストール後にhodomiaを起動し、「初回セットアップ」を実行してください。
 事前にコマンドとして呼び出せるuvとGitを用意し、ネット接続と数十GBの空き容量を確保してください。

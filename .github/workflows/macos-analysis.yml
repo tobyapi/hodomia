@@ -4,7 +4,16 @@ on:
     branches: ['**']
   pull_request:
   workflow_call:
+    inputs:
+      run-full-setup:
+        type: boolean
+        default: false
   workflow_dispatch:
+    inputs:
+      run-full-setup:
+        description: 'Download and prepare all analysis models on Apple Silicon'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -39,7 +48,7 @@ jobs:
       - run: python scripts/smoke-chordmini-macos.py test-results/chordmini-runtime
 
   full-setup:
-    if: github.event_name == 'workflow_dispatch'
+    if: inputs.run-full-setup
     runs-on: macos-15
     timeout-minutes: 90
     steps:
