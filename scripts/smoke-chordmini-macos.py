@@ -1,21 +1,10 @@
 """Run the installed ChordMini model on synthetic audio in macOS CI."""
-import math
-import struct
 import subprocess
 import sys
 import tempfile
-import wave
 from pathlib import Path
 
-
-def write_tone(path, seconds=12, rate=22050):
-    samples = (int(2000 * math.sin(2 * math.pi * 440 * index / rate))
-               for index in range(seconds * rate))
-    with wave.open(str(path), 'wb') as output:
-        output.setnchannels(1)
-        output.setsampwidth(2)
-        output.setframerate(rate)
-        output.writeframes(b''.join(struct.pack('<h', sample) for sample in samples))
+from smoke_audio import write_tone
 
 
 def main(runtime):
