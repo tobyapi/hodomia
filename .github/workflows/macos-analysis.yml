@@ -1,0 +1,26 @@
+name: Mac analysis
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install uv==0.9.22
+      - run: sh -n scripts/setup-macos.sh
+      - run: uv venv test-results/macos-venv --python 3.11
+      - run: uv pip install --no-cache --python test-results/macos-venv/bin/python -r analysis/requirements.macos-arm64.lock.txt
+      - run: test-results/macos-venv/bin/python -c "import torch, torchaudio, whisperx, beat_this, allin1_infer, demucs; print(torch.__version__)"
+      - run: PYTHONUTF8=1 test-results/macos-venv/bin/python -m unittest discover -s analysis/tests -v
