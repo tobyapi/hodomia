@@ -1,4 +1,9 @@
-use super::{runtime_paths::runtime_root, worker::call_worker, Workspace};
+use super::{
+    analysis_support,
+    runtime_paths::{python_in_venv, runtime_root},
+    worker::call_worker,
+    Workspace,
+};
 use serde_json::{json, Value};
 use std::fs;
 use tauri::State;
@@ -28,7 +33,9 @@ pub fn job_status<R: tauri::Runtime>(
         }
         result
     } else {
-        if !runtime_root(&app)?.join("venv/Scripts/python.exe").exists() {
+        if !analysis_support::AVAILABLE
+            || !python_in_venv(&runtime_root(&app)?.join("venv")).exists()
+        {
             return Ok(json!({"running": false, "kind": null, "log": ""}));
         }
         call_worker(&app, json!({"operation": "latest_job"}))

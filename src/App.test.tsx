@@ -12,6 +12,29 @@ test("browser preview is explicit and cannot invoke native file selection", () =
   expect(screen.getByRole("button", { name: "最初の曲を読み込む" })).toBeDisabled();
 });
 
+test("unsupported desktop cannot start setup or import music", async () => {
+  vi.mocked(api.runtimeStatus).mockResolvedValue({
+    path: "/tmp/hodomia", ready: false, analysisSupported: false, chordMiniReady: false,
+  });
+  render(<App />);
+  expect(await screen.findByText("○ この環境では解析未対応")).toBeVisible();
+  expect(screen.getAllByText(/Windows x64 または Apple Silicon 搭載 Mac をご利用ください。/).length).toBeGreaterThan(0);
+  expect(screen.getByRole("button", { name: "最初の曲を読み込む" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "＋ 曲を読み込む" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "初回セットアップ" })).not.toBeInTheDocument();
+  expect(api.setupRuntime).not.toHaveBeenCalled();
+});
+
+test("Apple Silicon can start setup", async () => {
+  vi.mocked(api.runtimeStatus).mockResolvedValue({
+    path: "/tmp/hodomia", ready: false, analysisSupported: true, chordMiniReady: false,
+  });
+  render(<App />);
+  fireEvent.click(await screen.findByRole("button", { name: "初回セットアップ" }));
+  await waitFor(() => expect(api.setupRuntime).toHaveBeenCalledOnce());
+  expect(screen.getByRole("button", { name: "処理ログ を閉じる" })).toBeVisible();
+});
+
 test("importing music opens only the source picker", async () => {
   vi.mocked(api.createProject).mockResolvedValue(structuredClone(fixture));
   render(<App />);

@@ -36,7 +36,7 @@
       "icons/icon.png"
     ],
     "category": "Music",
-    "resources": { "../analysis/": "analysis/", "../scripts/setup-analysis.ps1": "scripts/setup-analysis.ps1", "../scripts/setup-chordmini.ps1": "scripts/setup-chordmini.ps1", "../scripts/runtime-lock.ps1": "scripts/runtime-lock.ps1" },
+    "resources": { "../analysis/": "analysis/", "../scripts/setup-analysis.ps1": "scripts/setup-analysis.ps1", "../scripts/setup-chordmini.ps1": "scripts/setup-chordmini.ps1", "../scripts/setup-macos.sh": "scripts/setup-macos.sh", "../scripts/runtime-lock.ps1": "scripts/runtime-lock.ps1" },
     "windows": {
       "nsis": {
         "installMode": "currentUser",

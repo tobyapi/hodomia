@@ -1,4 +1,5 @@
 use super::{
+    analysis_support,
     process_control::hidden,
     runtime_paths::{runtime_root, source_root},
 };
@@ -10,11 +11,7 @@ use std::{
 
 pub(super) fn worker<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<Command, String> {
     let runtime = runtime_root(app)?;
-    let python = runtime.join("venv/Scripts/python.exe");
-    if !python.exists() {
-        return Err("解析環境が未準備です。「初回セットアップ」を実行してください。".into());
-    }
-    let mut command = Command::new(python);
+    let mut command = Command::new(analysis_support::analysis_python(&runtime)?);
     hidden(&mut command)
         .arg(source_root(app)?.join("analysis/cli.py"))
         .arg("--runtime")

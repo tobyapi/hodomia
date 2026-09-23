@@ -1,5 +1,6 @@
 """Process creation identity for detecting abandoned local jobs without PID reuse."""
 import os
+import sys
 from pathlib import Path
 
 
@@ -28,6 +29,11 @@ def process_identity(pid):
             return str((values[0].dwHighDateTime << 32) | values[0].dwLowDateTime)
         finally:
             kernel.CloseHandle(handle)
+    if sys.platform == 'darwin':
+        import subprocess
+        result = subprocess.run(['ps', '-p', str(pid), '-o', 'lstart='],
+                                capture_output=True, text=True, check=False)
+        return result.stdout.strip() if result.returncode == 0 else None
     try:
         # Fields after the final ')' start at field 3; starttime is field 22.
         fields = Path(f'/proc/{pid}/stat').read_text().rsplit(')', 1)[1].split()

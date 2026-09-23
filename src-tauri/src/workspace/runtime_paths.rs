@@ -38,3 +38,14 @@ pub(super) fn runtime_root<R: tauri::Runtime>(
         .map_err(crate::errors::message)?
         .join("runtime"))
 }
+
+pub(super) fn python_in_venv(venv: &Path) -> PathBuf {
+    #[cfg(windows)]
+    {
+        venv.join("Scripts/python.exe")
+    }
+    #[cfg(not(windows))]
+    {
+        venv.join("bin/python")
+    }
+}

@@ -20,7 +20,7 @@ beforeEach(() => {
     setItem: (key: string, value: string) => preferences.set(key, value),
   });
   vi.clearAllMocks(); vi.mocked(api.desktop).mockReturnValue(true);
-  vi.mocked(api.runtimeStatus).mockResolvedValue({ path: "D:/runtime", ready: true, chordMiniReady: true });
+  vi.mocked(api.runtimeStatus).mockResolvedValue({ path: "D:/runtime", ready: true, analysisSupported: true, chordMiniReady: true });
   vi.mocked(api.jobStatus).mockResolvedValue({ running: false, kind: null, log: "" });
   vi.mocked(api.choose).mockResolvedValue("D:/test");
   vi.mocked(api.openProject).mockResolvedValue(structuredClone(fixture));

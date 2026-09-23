@@ -24,6 +24,7 @@ impl Drop for Workspace {
 
 mod access;
 pub(crate) mod analysis_jobs;
+mod analysis_support;
 pub(crate) mod job_status;
 pub(crate) mod lyrics;
 pub(crate) mod operations;
@@ -40,6 +41,7 @@ mod worker_response;
 
 mod operation_args;
 
+mod setup_command;
 mod setup_process;
 
 mod file_picker;

@@ -31,7 +31,7 @@ test("BTC is the only chord engine and old results and manual edits remain reada
 });
 
 test("missing BTC blocks chord and full analysis but allows setup and vocal analysis", async () => {
-  vi.mocked(api.runtimeStatus).mockResolvedValue({ path: "D:/runtime", ready: true, chordMiniReady: false });
+  vi.mocked(api.runtimeStatus).mockResolvedValue({ path: "D:/runtime", ready: true, analysisSupported: true, chordMiniReady: false });
   render(<App />);
   fireEvent.click(screen.getByRole("button", { name: "プロジェクトを開く" }));
   await screen.findByRole("heading", { name: "テスト曲" });

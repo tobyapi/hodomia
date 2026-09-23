@@ -4,11 +4,22 @@ import { pollProject } from "./pollProject";
 import { pollUiRequest } from "./pollUiRequest";
 import type { WorkspaceState } from "./useWorkspaceState";
 
-async function updateJob(state: WorkspaceState, next: Job, alive: () => boolean) {
+function reportFailure(state: WorkspaceState, next: Job) {
+  state.setShowLog(true);
+  if (next.state === "cancelled") {
+    state.setMessage("解析を中止しました。");
+  } else if (next.kind === "setup") {
+    state.setError("解析環境のセットアップに失敗しました。処理ログを確認してください。");
+  } else {
+    state.setError(next.error ? `解析に失敗しました: ${next.error}` : "解析に失敗しました。処理ログを確認してください。");
+  }
+}
+
+export async function updateJob(state: WorkspaceState, next: Job, alive: () => boolean) {
   if (state.previousRunning.current && !next.running) {
     const info = await state.api.runtimeStatus();
     if (alive()) state.setRuntime(info);
-    if (next.success === false && alive()) state.setError("処理が終了しました。ログと解析状態を確認してください。");
+    if (next.success === false && alive()) reportFailure(state, next);
   }
   state.previousRunning.current = next.running;
 }

@@ -26,9 +26,9 @@ export type Snapshot = {
   edits: Edits; result: Analysis;
   status: { state: string; stage: string; progress?: number; elapsed?: number; errors: { stage: string; message: string }[] };
 };
-export type Job = { running: boolean; success?: boolean | null; kind: string | null; log: string; jobId?: string; root?: string; cancelRequested?: boolean };
+export type Job = { running: boolean; success?: boolean | null; kind: string | null; log: string; jobId?: string; root?: string; state?: string; error?: string; cancelRequested?: boolean };
 export type UiRequest = { requestId: string; root: string; start: number; end: number; stem: string; track: Track; state: string };
-export type RuntimeStatus = { path: string; ready: boolean; chordMiniReady?: boolean; details?: { cudaAvailable: boolean; torch: string } };
+export type RuntimeStatus = { path: string; ready: boolean; analysisSupported: boolean; chordMiniReady?: boolean; details?: { cudaAvailable: boolean; torch: string } };
 export type AnalysisOptions = { mode: Mode; lyrics: string; scope?: "vocal-events" | "harmony"; beatboxRecall?: boolean; eventSensitivity?: "standard" | "sensitive"; region?: { start: number; end: number; language: "ja" | "en" } };
 export const TRACK_NAMES: Record<Track, string> = { beats: "拍・小節", sections: "曲構成", lyrics: "歌詞", words: "単語", vocalEvents: "声の表現", chords: "コード", key: "キー" };
 export const VOCAL_CATEGORIES: Record<VocalCategory, string> = { rap: "ラップ", spoken: "朗読・語り", beatbox: "ビートボックス", breath: "ブレス", humming: "ハミング", other: "その他の非言語発声" };

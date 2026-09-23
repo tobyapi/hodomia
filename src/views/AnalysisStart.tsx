@@ -9,5 +9,5 @@ export function AnalysisStart({ model }: { model: WorkspaceModel }) {
 
 function ChordSetup({ model }: { model: WorkspaceModel }) {
   const { runtime, desktop, locked, guarded, api, setJob, previousRunning, setShowLog } = model;
-  return <>{!runtime?.chordMiniReady && desktop && <div className="event-note"><p className="muted">コード分析にはBTCモデルの準備が必要です。</p><button disabled={!runtime?.ready || locked} onClick={() => void guarded(async () => { await api.setupRuntime(true); setJob({ running: true, kind: "setup", log: "" }); previousRunning.current = true; setShowLog(true); })}>コードモデルをセットアップ</button></div>}</>;
+  return <>{!runtime?.chordMiniReady && desktop && runtime?.analysisSupported !== false && <div className="event-note"><p className="muted">コード分析にはBTCモデルの準備が必要です。</p><button disabled={!runtime?.ready || locked} onClick={() => void guarded(async () => { await api.setupRuntime(true); setJob({ running: true, kind: "setup", log: "" }); previousRunning.current = true; setShowLog(true); })}>コードモデルをセットアップ</button></div>}</>;
 }

@@ -40,7 +40,7 @@ def prepare(runtime):
     print('Download: Beat This', flush=True)
     checkpoint = models / 'torch' / 'checkpoints' / 'beat_this-final0.ckpt'
     if not checkpoint.exists():
-        subprocess.run(['curl.exe', '--fail', '--location', '--retry', '3', '--output', str(checkpoint),
+        subprocess.run(['curl', '--fail', '--location', '--retry', '3', '--output', str(checkpoint),
                         'https://cloud.cp.jku.at/public.php/dav/files/7ik4RrBKTS273gp/final0.ckpt'], check=True)
     with checkpoint.open('rb') as stream:
         if hashlib.file_digest(stream, 'sha256').hexdigest() != '8c328b45f59d8dd3dff219253ff6a8d6482be57d0133a29140e2febbf8eb8331':
