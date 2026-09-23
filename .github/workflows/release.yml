@@ -24,6 +24,33 @@ jobs:
     needs: validate
     uses: ./.github/workflows/check.yml
 
+  macos-dependencies:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-arm64
+            runner: macos-15
+            python-platform: aarch64-apple-darwin
+          - platform: macos-x64
+            runner: macos-15-intel
+            python-platform: x86_64-apple-darwin
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install uv==0.9.22
+      - run: mkdir -p test-results && uv pip compile analysis/requirements.txt --python 3.11 --python-platform ${{ matrix.python-platform }} --output-file test-results/${{ matrix.platform }}.lock.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-dependencies-${{ matrix.platform }}
+          path: test-results/${{ matrix.platform }}.lock.txt
+          if-no-files-found: error
+
   build:
     needs: validate
     strategy:
