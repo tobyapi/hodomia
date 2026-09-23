@@ -61,3 +61,4 @@ jobs:
       - run: sh scripts/setup-macos.sh test-results/full-runtime full
       - run: test -s test-results/full-runtime/ready.json
       - run: PYTHONUTF8=1 test-results/full-runtime/venv/bin/python scripts/smoke-analysis-macos.py test-results/full-runtime
+      - run: PYTHONUTF8=1 test-results/full-runtime/venv/bin/python scripts/smoke-lyrics-macos.py test-results/full-runtime
