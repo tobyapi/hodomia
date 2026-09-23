@@ -29,6 +29,7 @@ MCPはautomation/mcp-server.mjs → worker-client.mjs → headless.py。公式SD
 - `analysis/storage.py`: プロジェクト作成・読み込み・修正保存の窓口。`json_store.py`: 原子的保存。`track_schema.py`: 検証。`project_export.py`: 書き出し。MLを読み込まず操作可能。
 - `pipeline.py`: 段階実行。`checkpoints.py`: 進捗保存・取消・部分失敗。`lyrics_stage.py` / `vocal_stage.py`: 各段階の結果更新。`engines.py`: 学習済みモデル。`dsp.py`: 信号処理。`lyrics.py`: ASR・既知歌詞照合・時刻合わせ。
 - `prepare.py`: オンラインモデル準備専用。解析とは別プロセス。
+- `setup_macos.py` / `scripts/setup-macos.sh`: Apple Silicon向けの初回セットアップ。Python環境・固定依存・モデルの取得だけを担当し、解析時には使わない。
 - `vocal_events.py`: 原曲と分離ボーカルの多ラベル音声分類。歌詞データに依存せず、候補範囲・根拠・未校正スコアを返す。`scope=vocal-events` の解析は既存の自動結果をコピーしてこのトラックだけ更新する。
 - `tests/ui/`: ブラウザー専用の注入ハーネス。本番のViteエントリには含めない。
 

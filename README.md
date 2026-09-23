@@ -8,14 +8,14 @@
 
 [最新版のダウンロード（GitHub Releases）](https://github.com/tobyapi/hodomia/releases/latest)から、使うOSのファイルを選んでください。
 
-音源解析はWindows x64版で利用できます。macOS（Apple Silicon / Intel）とLinux x64版は実験的なUIビルドで、解析環境のセットアップと音源解析は未対応です。配布形式や署名の状態は[リリース](docs/releases.md)に記載しています。
+音源解析はWindows x64版とApple Silicon搭載Mac向けです。Intel MacとLinux x64版は実験的なUIビルドで、音源解析は利用できません。配布形式や署名の状態は[リリース](docs/releases.md)に記載しています。
 
 ## はじめる
 
 セットアップをコーディングエージェントに依頼する場合は、このリポジトリを開いて次のプロンプトを渡してください。初回は依存パッケージとモデルをダウンロードするため、ネット接続と数十GBの空き容量が必要です。
 
 ```text
-hodomiaをこのWindows環境で使えるようにセットアップし、デスクトップアプリを起動してください。
+hodomiaをこの環境で使えるようにセットアップし、デスクトップアプリを起動してください。
 
 AGENTS.mdとdocs/development.mdを読み、必要な同梱スキルを使って進めてください。
 まず環境を診断し、不足する依存関係と解析モデルを準備してください。

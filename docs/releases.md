@@ -17,9 +17,8 @@
 Windows / LinuxのARM版、iOS、Androidはこのワークフローの対象外です。
 macOSとLinuxにはOS別のTauri設定を用意し、macOS用のICNSは既存のPNGからTauri CLIで生成しています。
 
-**解析機能はWindows向けです。** 現在のアプリはPowerShellによるセットアップとWindowsのPython配置を使用しています。
-macOS・Linux版は実験的なUIビルドとして配布し、セットアップ・解析が未対応であることをリリース本文にも記載します。
-全OSでの解析を提供するには、Python環境の作成・検出、モデル依存、プロセス識別、保存先の移植と実機検証が必要です。
+解析機能はWindows x64とApple Silicon搭載Mac向けです。Mac版はOS別のPython環境と依存パッケージをセットアップし、解析ワーカーをローカルで起動します。Intel MacとLinux版は実験的なUIビルドで、アプリ内からのセットアップと解析を無効にしています。
+Apple Silicon版の依存インストールとPythonテストは専用のMacランナーで検証し、リリースの必須条件にします。モデルはインストーラーに含まれず、初回セットアップ時に取得します。
 
 ## 公開せずに確認する
 
@@ -28,7 +27,7 @@ GitHubのActionsから `Release` → `Run workflow` を選び、対象ブラン�
 保存期間は14日間です。手動実行ではタグを選んだ場合もReleaseを公開しません。
 
 ビルドは解析モデルやユーザーの音源を取得しません。
-Windowsの共通チェックは `.github/workflows/check.yml` を呼び出し、合成音と軽量なPython依存で実行します。
+Windowsの共通チェックは `.github/workflows/check.yml`、Apple Siliconの解析依存とPythonテストは `.github/workflows/macos-analysis.yml` を呼び出します。
 
 ## タグで公開する
 

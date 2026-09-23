@@ -4,16 +4,24 @@
 
 OS別の配布ビルドとGitHub Releasesへの公開は[リリース手順](releases.md)を参照してください。
 
-Tauri 2 + React 19 + TypeScriptのWindows向けアプリです。コーディングエージェントはAGENTS.mdと同梱スキルを読み、この手順で環境を準備してください。
+Tauri 2 + React 19 + TypeScriptのデスクトップアプリです。コーディングエージェントはAGENTS.mdと同梱スキルを読み、この手順で環境を準備してください。
 
 ## 開発環境の準備
 
-Node.js 22以上、Rust stable MSVC、Visual Studio C++ Build Tools / Windows SDK、WebView2、[uv](https://docs.astral.sh/uv/getting-started/installation/) が必要です。解析環境はPython3.11、CUDA12.8対応PyTorch。NVIDIA GPUがない場合はCPUを使用し、時間がかかります。8GB GPUでモデルを順次読み込む構成です。
+Windowsでの開発にはNode.js 22以上、Rust stable MSVC、Visual Studio C++ Build Tools / Windows SDK、WebView2、[uv](https://docs.astral.sh/uv/getting-started/installation/) が必要です。解析環境はPython3.11、CUDA12.8対応PyTorch。NVIDIA GPUがない場合はCPUを使用し、時間がかかります。8GB GPUでモデルを順次読み込む構成です。
 
 ```powershell
 npm ci
 npm run doctor
 npm run setup:analysis
+npm run tauri:dev
+```
+
+Apple Silicon搭載MacではNode.js 22以上、Rust stable、Xcode Command Line Tools、uv、Gitを用意します。アプリ内の「初回セットアップ」は `scripts/setup-macos.sh` を呼び、Python 3.11、解析依存、モデルをアプリデータ内に準備します。MacではCPUで推論します。開発時に同じセットアップを行う場合は次を実行します。
+
+```sh
+npm ci
+sh scripts/setup-macos.sh .runtime full
 npm run tauri:dev
 ```
 
@@ -39,13 +47,13 @@ pre-commitは複雑度・MIも検査し、pre-pushは `npm run analyze` で全�
 | --- | --- |
 | `npm run analyze` | 複雑度・MI・依存関係・Rust Clippy。JSONレポートを出力 |
 | `npm run check` | UI・編集、Python保存/DSP、型検査、ビルド、Rustテスト/Clippy |
-| `npm run tauri:build -- --no-bundle` | Windows実行ファイルの生成 |
+| `npm run tauri:build -- --no-bundle` | 現在のOSの実行ファイルを生成 |
 | `npm run tauri:build` | NSISインストーラーの生成 |
 | `npm run dev` | localhost:1430のブラウザープレビュー |
 | `npm run harness:prepare -- "プロジェクトのパス"` | 実データのブラウザー表示用コピーを作成 |
 
 ハーネスは開発サーバーの `/tests/ui/`。修正保存はメモリー内のみで、解析・外部書き出しは行いません。本番ビルドには入りません。実曲・モデル・ハーネス用データはGit対象外です。CIは合成音と軽量依存で実行し、GPUモデルやユーザー音源を取得しません。
 
-`analysis/requirements.txt` は主要依存、`analysis/requirements.lock.txt` は検証した全依存です。インストール時にはlockを使います。React→`src/api.ts`→Rust→`analysis/cli.py`の順に処理を呼び出します。詳細は [構成](../.clean/architecture.md) と [検証記録](verification.md)。
+`analysis/requirements.txt` は主要依存、`analysis/requirements.lock.txt` はWindows向け、`analysis/requirements.macos-arm64.lock.txt` はApple Silicon向けの固定依存です。React→`src/api.ts`→Rust→`analysis/cli.py`の順に処理を呼び出します。詳細は [構成](../.clean/architecture.md) と [検証記録](verification.md)。
 
 解析エンジン: Demucs htdemucs_ft、Beat This final0、All-In-One harmonix-all、faster-whisper large-v3、WhisperX、librosa。各モデル・依存のライセンスは配布元に従います。

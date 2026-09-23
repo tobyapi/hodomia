@@ -8,10 +8,9 @@
 | `*amd64.deb` | Linux x64、Debian / Ubuntu |
 | `*amd64.AppImage` | Linux x64、AppImage |
 
-解析環境の初回セットアップとアプリからの解析は、現在Windows向けです。
-macOS・Linux版は実験的なUIビルドで、解析環境のセットアップや音源解析はまだ利用できません。
+Apple Silicon搭載Macで解析環境のセットアップと音源解析を利用できるようにしました。Mac上でPython依存のインストールと解析コードのテストを確認しています。Intel MacとLinux版は実験的なUIビルドで、解析は利用できません。
 
-Windowsではインストール後にhodomiaを起動し、「初回セットアップ」を実行してください。
+WindowsとApple Silicon搭載Macではインストール後にhodomiaを起動し、「初回セットアップ」を実行してください。
 事前にコマンドとして呼び出せるuvとGitを用意し、ネット接続と数十GBの空き容量を確保してください。
 モデルはこのセットアップ時に取得し、その後の解析はローカルで実行します。[セットアップの手順](https://github.com/tobyapi/hodomia/blob/main/docs/development.md#開発環境の準備)
 
