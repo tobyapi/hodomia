@@ -22,12 +22,12 @@
 | `edits` | 保存済みの手修正。`revision`は保存リビジョン、`tracks`はトラック単位の上書き。自動操作後は`lastMutation`が付く場合もある |
 | `tracks` | 自動結果へ保存済みの手修正を反映したトラック。外部ツールで編集後の内容を使う場合はここを読む |
 | `bpm` | `tracks.beats`の時刻を昇順にし、正の拍間隔の中央値から再計算したBPM。計算できなければ`null` |
-| `status` | 解析状態。`state`、`stage`（表示文言）、`errors`を含む。解析後は`progress`（0～1）や`elapsed`（秒）も入る |
+| `status` | 解析状態。`state`、`stage`（表示文言）、`errors`を含む。解析後は`progress`（0～1）、`elapsed`（秒）、`timings`（段階別の秒数）も入る |
 | `notice` | 自動推定に未確認情報が含まれることを伝える文言 |
 
 手修正は**トラック全体の置換**です。たとえば `edits.tracks.lyrics` があれば、`result.tracks.lyrics` の行に個別マージせず、その配列全体を `tracks.lyrics` に採用します。空配列 `[]` も有効な上書きです。まだ保存していない修正は、直接CLI/MCPから書き出したJSONには入りません。
 
-`status.state` は `idle`（未解析）、`running`、`complete`、`partial`（一部失敗）、`failed`、`cancelled`。`errors` は `{ "stage": "段階名", "message": "エラー内容" }` の配列です。部分失敗や未解析でも書き出せるため、必要なトラックがあるか確認してください。CLI/MCP経由では解析中の書き出しは `BUSY` になります。
+`status.state` は `idle`（未解析）、`running`、`complete`、`partial`（一部失敗）、`failed`、`cancelled`。`errors` は `{ "stage": "段階名", "message": "エラー内容" }` の配列です。`timings` は `{ "stage": "段階名", "seconds": 秒 }` の配列で、失敗や中止で終わった段階も含みます。音源の確認と解析ライブラリの読み込みは記録しないため、合計は `elapsed` より小さくなります。コード推定（BTC）は分離と並行して動くので、「コード・キー」の秒数はキー推定とBTCの完了待ちの時間です。BTC自体の処理時間は `result.engines.chords.elapsedSeconds` を見てください。この記録を追加する前のrunには `timings` がありません。部分失敗や未解析でも書き出せるため、必要なトラックがあるか確認してください。CLI/MCP経由では解析中の書き出しは `BUSY` になります。
 
 ### トラックと行
 
@@ -112,7 +112,7 @@
     "stems": { "vocals": "runs/example-run/stems/vocals.wav" },
     "engines": {}
   },
-  "status": { "state": "partial", "stage": "一部の解析に失敗しました", "progress": 1, "elapsed": 30.0, "errors": [{ "stage": "拍・BPM", "message": "例示用のエラー" }] },
+  "status": { "state": "partial", "stage": "一部の解析に失敗しました", "progress": 1, "elapsed": 30.0, "errors": [{ "stage": "拍・BPM", "message": "例示用のエラー" }], "timings": [{ "stage": "拍・BPM", "seconds": 2.5 }] },
   "tracks": {
     "lyrics": [
       { "id": "line-0", "start": 2.0, "end": 4.5, "label": "サンプルの歌詞", "reviewed": true }

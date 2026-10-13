@@ -4,6 +4,7 @@ import sys
 import time
 import traceback
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from locking import file_lock
@@ -42,8 +43,8 @@ class Checkpoint:
     def __init__(self, root, folder, result, cancel_path):
         self.root, self.folder, self.result = root, folder, result
         self.cancel_path = cancel_path
-        self.started, self.errors = time.monotonic(), []
-        self.status = {'state': 'running', 'stage': '準備', 'progress': 0, 'errors': self.errors}
+        self.started, self.errors, self.timings = time.monotonic(), [], []
+        self.status = {'state': 'running', 'stage': '準備', 'progress': 0, 'errors': self.errors, 'timings': self.timings}
 
     def cancelled(self):
         return (self.root / 'cancel.flag').exists() or (self.cancel_path is not None and Path(self.cancel_path).exists())
@@ -59,10 +60,20 @@ class Checkpoint:
         write_json(self.folder / 'result.json', self.result)
         write_json(self.folder / 'status.json', self.status)
 
+    @contextmanager
+    def timed(self, stage):
+        """Record wall-clock seconds even when the stage fails or is cancelled."""
+        started = time.monotonic()
+        try:
+            yield
+        finally:
+            self.timings.append({'stage': stage, 'seconds': round(time.monotonic() - started, 3)})
+
     def attempt(self, stage, progress, action):
         self.publish(stage, progress)
         try:
-            action()
+            with self.timed(stage):
+                action()
         except Cancelled:
             raise
         except Exception as error:

@@ -7,6 +7,7 @@ from analysis_options import validate_options
 from pathlib import Path
 from storage import manifest, within, row
 from checkpoints import Cancelled, Checkpoint, create_run
+from harmony_stage import BackgroundChords, analyze_harmony
 from lyrics_stage import analyze_lyrics
 from vocal_stage import vocal_events as detect_vocals
 
@@ -24,6 +25,7 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
     checkpoint = Checkpoint(root, folder, result, cancel_path)
     publish, attempt, cancelled = checkpoint.publish, checkpoint.attempt, checkpoint.cancelled
     errors = checkpoint.errors
+    chords = None
 
     try:
         publish('音源の同一性を確認', 0)
@@ -31,7 +33,7 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
             if hashlib.file_digest(stream, 'sha256').hexdigest() != project['source']['sha256']:
                 raise ValueError('保存済みの元音源が変更されています。新しいプロジェクトとして読み込んでください。')
         from engines import configure, separate, beats, sections
-        from dsp import basics, estimate_key, pitch, stem_activity
+        from dsp import basics, pitch, stem_activity
         import numpy as np
         models, device = configure(runtime)
         # After setup every network attempt is a bug, including model-cache fallback.
@@ -42,25 +44,12 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
         audio = within(root, project['audio'])
         duration = project['duration']
         paths = {}
-        def analyze_harmony_signal(signal, sr, source):
-            from chordmini import infer
-            def check_cancel():
-                if cancelled():
-                    raise Cancelled()
-            chords, engine = infer(audio, runtime, folder, duration, check_cancel)
-            key = estimate_key(signal, sr, duration)
-            result['tracks'].update(chords=chords, key=key)
-            result.pop('chordComparisons', None)
-            result['engines']['chords'] = engine
-            result['engines']['harmonySource'] = engine['source']
-            result['engines']['keySource'] = source
         if harmony_only:
+            chords = BackgroundChords(audio, runtime, folder, duration, cancelled)
             def refresh_harmony():
-                from dsp import accompaniment
-                paths = {name: within(root, path) for name, path in result.get('stems', {}).items()}
+                stems = {name: within(root, path) for name, path in result.get('stems', {}).items()}
                 y, sr, _, _ = basics(audio)
-                signal, source = accompaniment(paths, y, sr)
-                analyze_harmony_signal(signal, sr, source)
+                analyze_harmony(result, chords, stems, y, sr, duration)
             attempt('コード・キーを再推定', .1, refresh_harmony)
             publish('コード・キーの再推定に失敗しました' if errors else 'コード・キーの再推定完了', 1, 'partial' if errors else 'complete')
             return
@@ -74,13 +63,15 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
             return
         if not region:
             publish('波形・音量', .05)
-            y, sr, basic, onset = basics(audio)
+            with checkpoint.timed('波形・音量'):
+                y, sr, basic, onset = basics(audio)
             result['series'].update(basic)
             result['engines']['signal'] = 'librosa 0.11 / chroma key / pYIN'
             if basic['silence']:
                 result['tracks'] = {name: [] for name in ('beats', 'sections', 'lyrics', 'words', 'vocalEvents', 'chords', 'key')}
                 publish('無音のため音楽情報を推定できませんでした', 1, 'complete')
                 return
+            chords = BackgroundChords(audio, runtime, folder, duration, cancelled)
             def separation():
                 nonlocal paths
                 cached = previous or {}
@@ -109,11 +100,7 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
                 result['series']['tempo'] = [{'time': t, 'value': float(60 / dt)} for t, dt in zip(times, intervals) if dt > 0]
                 result['engines']['beats'] = 'Beat This final0'
             attempt('拍・BPM', .42, rhythm)
-            def analyze_harmony():
-                from dsp import accompaniment
-                signal, source = accompaniment(paths, y, sr)
-                analyze_harmony_signal(signal, sr, source)
-            attempt('コード・キー', .5, analyze_harmony)
+            attempt('コード・キー', .5, lambda: analyze_harmony(result, chords, paths, y, sr, duration))
             def analyze_structure():
                 if not paths:
                     raise ValueError('構造解析の前に分離を完了してください。')
@@ -141,3 +128,6 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
         checkpoint.finish_error(error)
         traceback.print_exc()
         raise
+    finally:
+        if chords is not None:
+            chords.stop()
