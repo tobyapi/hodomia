@@ -3,6 +3,11 @@ import gc
 import os
 from pathlib import Path
 
+# Every label in allin1_infer.config.HARMONIX_LABELS, shown in Japanese.
+SECTION_LABELS = {'intro': 'イントロ', 'verse': 'ヴァース', 'chorus': 'サビ', 'bridge': 'ブリッジ',
+                  'outro': 'アウトロ', 'inst': 'インスト', 'break': 'ブレイク', 'start': '開始', 'end': '終了',
+                  'solo': 'ソロ'}
+
 
 def configure(runtime):
     import torch
@@ -79,9 +84,7 @@ def sections(paths, folder, models, device, duration):
     with torch.inference_mode():
         result = run_inference(path=paths['bass'], spec_path=spectra[0], model=model,
                                device=device, include_activations=False, include_embeddings=False)
-    names = {'intro': 'イントロ', 'verse': 'ヴァース', 'chorus': 'サビ', 'bridge': 'ブリッジ',
-             'outro': 'アウトロ', 'instrumental': 'インスト', 'start': '開始', 'end': '終了', 'solo': 'ソロ'}
-    rows = [row('section', i, max(0, float(s.start)), min(duration, float(s.end)), names.get(s.label, s.label),
+    rows = [row('section', i, max(0, float(s.start)), min(duration, float(s.end)), SECTION_LABELS.get(s.label, s.label),
                 warning='モデル推定・区間名と境界は試聴して確認してください。')
             for i, s in enumerate(result.segments) if s.start < min(duration, s.end)]
     del model, result
