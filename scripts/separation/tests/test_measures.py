@@ -32,7 +32,14 @@ class ReportTests(unittest.TestCase):
         text = markdown(dict(input='song.wav', excerpt=dict(start=0, seconds=30), device='cpu', torch='2.8.0',
                              msstCommit='abc', models=[dict(id='htdemucs_ft', license='MIT', elapsedSeconds=12.345)]))
         row = next(line for line in text.splitlines() if line.startswith('| htdemucs_ft'))
-        self.assertEqual(row, '| htdemucs_ft | MIT | 12.35 | - | - | - | - | - | - |')
+        self.assertEqual(row, '| htdemucs_ft | MIT | 12.35 | - | - | - | - | - | - | - | - |')
+
+    def test_four_stem_flag_is_written_in_words(self):
+        text = markdown(dict(input='song.wav', excerpt=dict(start=0, seconds=30), device='cpu', torch='2.8.0',
+                             msstCommit='abc', models=[dict(id='scnet_xl_ihf', fourStems=True),
+                                                       dict(id='mel_roformer_kim', fourStems=False)]))
+        self.assertIn('| scnet_xl_ihf | - | - | - | - | - | あり |', text)
+        self.assertIn('| mel_roformer_kim | - | - | - | - | - | なし |', text)
 
 
 if __name__ == '__main__':

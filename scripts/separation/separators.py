@@ -1,32 +1,35 @@
-"""Run one vocal separation model; every function returns vocals as (frames, channels)."""
+"""Run one separation model; every function returns hodomia stems as (frames, channels) arrays."""
 import time
 
 
 def measure(device, action):
-    """Return the action's result with wall-clock seconds and peak CUDA memory in MiB."""
+    """Return the action's result with wall-clock seconds and peak CUDA memory in MiB.
+
+    Allocated memory is what tensors used; reserved memory is what the allocator kept from the GPU."""
     import torch
     cuda = device == 'cuda'
     if cuda:
         torch.cuda.reset_peak_memory_stats()
     started = time.perf_counter()
-    vocals = action()
+    stems = action()
     elapsed = time.perf_counter() - started
-    return vocals, elapsed, torch.cuda.max_memory_allocated() / 2 ** 20 if cuda else None
+    if not cuda:
+        return stems, elapsed, None, None
+    return stems, elapsed, torch.cuda.max_memory_allocated() / 2 ** 20, torch.cuda.max_memory_reserved() / 2 ** 20
 
 
-def demucs_vocals(mix_path, folder, models, device):
+def demucs_stems(mix_path, folder, models, device):
     """The app's own separation call, so the baseline matches analysis exactly."""
     import soundfile as sf
     from engines import separate
     paths = separate(mix_path, folder, models, device)
-    vocals, _ = sf.read(str(paths['vocals']), dtype='float32', always_2d=True)
-    return vocals
+    return {name: sf.read(str(path), dtype='float32', always_2d=True)[0] for name, path in paths.items()}
 
 
-def roformer_vocals(candidate, config_path, weights, mix, device, batch_size=None):
+def roformer_stems(candidate, config_path, weights, mix, device, batch_size=None):
     """Inference through the pinned MSST checkout, which must already be on sys.path.
 
-    Multi-stem models return every stem; only vocals are compared."""
+    Only the outputs listed in candidate.stems are returned, renamed to hodomia's stem names."""
     import numpy as np
     import torch
     from engines import release
@@ -44,4 +47,4 @@ def roformer_vocals(candidate, config_path, weights, mix, device, batch_size=Non
         del model
         release()
     # soundfile writes only C-contiguous arrays, and the transpose of MSST's (channels, frames) is not.
-    return np.ascontiguousarray(separated['vocals'].T, dtype=np.float32)
+    return {stem: np.ascontiguousarray(separated[output].T, dtype=np.float32) for stem, output in candidate.stems}

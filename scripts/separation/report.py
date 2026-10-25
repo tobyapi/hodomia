@@ -3,7 +3,8 @@ import json
 
 COLUMNS = (
     ('モデル', 'id'), ('ライセンス', 'license'), ('処理秒', 'elapsedSeconds'), ('実時間比', 'realtimeFactor'),
-    ('GPUピークMiB', 'peakGpuMemoryMiB'), ('ボーカルdBFS', 'vocalsLevelDb'), ('伴奏dBFS', 'instrumentalLevelDb'),
+    ('GPUピークMiB', 'peakGpuMemoryMiB'), ('GPU確保MiB', 'peakGpuReservedMiB'), ('4ステム', 'fourStems'),
+    ('ボーカルdBFS', 'vocalsLevelDb'), ('伴奏dBFS', 'instrumentalLevelDb'),
     ('SDRボーカル', 'sdrVocals'), ('SDR伴奏', 'sdrInstrumental'),
 )
 
@@ -11,6 +12,8 @@ COLUMNS = (
 def cell(value):
     if value is None:
         return '-'
+    if isinstance(value, bool):
+        return 'あり' if value else 'なし'
     return f'{value:.2f}' if isinstance(value, float) else str(value)
 
 
@@ -18,7 +21,7 @@ def markdown(report):
     excerpt = report['excerpt']
     span = f"{excerpt['start']:.1f}秒から{excerpt['seconds']:.1f}秒間"
     lines = [
-        f"# ボーカル分離の比較：{report['input']}", '',
+        f"# 分離の比較：{report['input']}", '',
         f"- 区間：{span}", f"- 実行環境：{report['device']} / torch {report['torch']}",
         f"- MSST：{report['msstCommit']}", '',
         '| ' + ' | '.join(title for title, _ in COLUMNS) + ' |',
@@ -27,6 +30,9 @@ def markdown(report):
     lines += ['| ' + ' | '.join(cell(row.get(key)) for _, key in COLUMNS) + ' |' for row in report['models']]
     lines += [
         '', '伴奏はミックスからボーカルを引いた音です。',
+        '4ステムが「あり」のモデルは stems/ にbass・drums・other・vocalsを保存します。'
+        'otherを出さないモデルと組み合わせでは、ミックスから他の3つを引いた残りをotherにします。',
+        '組み合わせの処理秒は2つのモデルの合計、GPUの値は大きいほうです。',
         'SDRは参照ボーカルを指定したときだけ計算し、伴奏の参照はミックスから参照ボーカルを引いて作ります。',
         '各モデルのフォルダーにある vocals.wav と instrumental.wav を聴き比べてください。',
     ]

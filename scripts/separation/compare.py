@@ -1,8 +1,6 @@
-"""Compare vocal separation models on one local song without network access."""
+"""Compare separation models on one local song without network access."""
 import argparse
-import socket
 import sys
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -10,61 +8,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'analysis'))
 
 import inputs
 import installation
-import measures
 import report
-import separators
-from candidates import BASELINE, CANDIDATES, MSST_COMMIT, by_id
-
-
-def deny_network():
-    def refuse(*_args, **_kwargs):
-        raise RuntimeError('分離の比較はオフラインで実行します。ネット接続は禁止です。')
-    socket.create_connection = refuse
-    socket.socket.connect = refuse
-    socket.socket.connect_ex = refuse
-
-
-@dataclass(frozen=True)
-class Session:
-    folder: Path
-    home: Path
-    models: Path
-    device: str
-    mix_path: Path
-    mix: object
-    reference: object
-    batch_size: int | None
-
-
-def separation(candidate, session, target):
-    if candidate is BASELINE:
-        return lambda: separators.demucs_vocals(session.mix_path, target / 'stems', session.models, session.device)
-    installation.verify_downloads(session.home, candidate)
-    config = installation.config_path(session.home, candidate)
-    weights = installation.download_path(session.home, candidate.weights)
-    return lambda: separators.roformer_vocals(candidate, config, weights, session.mix,
-                                              session.device, session.batch_size)
-
-
-def evaluate(candidate, session):
-    import soundfile as sf
-    target = session.folder / candidate.id
-    target.mkdir(exist_ok=True)
-    print(f'分離: {candidate.label}', flush=True)
-    vocals, elapsed, peak = separators.measure(session.device, separation(candidate, session, target))
-    instrumental = session.mix - vocals
-    for name, samples in (('vocals', vocals), ('instrumental', instrumental)):
-        sf.write(str(target / f'{name}.wav'), samples, inputs.RATE, subtype='FLOAT')
-    row = dict(id=candidate.id, label=candidate.label, license=candidate.license or '記載なし',
-               licenseSource=candidate.license_source, elapsedSeconds=elapsed,
-               realtimeFactor=elapsed / (len(session.mix) / inputs.RATE), peakGpuMemoryMiB=peak,
-               vocalsLevelDb=measures.level_db(vocals), instrumentalLevelDb=measures.level_db(instrumental))
-    if candidate.weights:
-        row['weightsSha256'] = candidate.weights.sha256
-    if session.reference is not None:
-        row.update(sdrVocals=measures.sdr(session.reference, vocals),
-                   sdrInstrumental=measures.sdr(session.mix - session.reference, instrumental))
-    return row
+from offline import deny_network
+from candidates import CANDIDATES, COMBINATIONS, MSST_COMMIT, by_id
+from evaluation import Session, combined, evaluate
 
 
 def selected(identifiers, home):
@@ -81,7 +28,7 @@ def output_folder(args):
 
 
 def parse(argv):
-    parser = argparse.ArgumentParser(description='手元の曲でボーカル分離モデルを比べます（オフライン）。')
+    parser = argparse.ArgumentParser(description='手元の曲で分離モデルを比べます（オフライン）。')
     parser.add_argument('song', type=Path, help='音源ファイル、またはhodomiaのプロジェクトフォルダー')
     parser.add_argument('--models', nargs='+', choices=[candidate.id for candidate in CANDIDATES],
                         help='既定は重みを準備済みの全モデル')
@@ -111,6 +58,7 @@ def main(argv=None):
     mix_path, mix, reference = inputs.prepare(args.song, folder, args.start, args.duration, args.reference_vocals)
     session = Session(folder, home, models, device, mix_path, mix, reference, args.batch_size)
     rows = [evaluate(candidate, session) for candidate in selected(args.models, home)]
+    rows += [row for row in (combined(combination, rows, session) for combination in COMBINATIONS) if row]
     report.write(folder, dict(input=str(args.song), excerpt=dict(start=args.start, seconds=len(mix) / inputs.RATE),
                               device=device, torch=torch.__version__, msstCommit=MSST_COMMIT, models=rows))
     print(f'結果: {folder / "report.md"}', flush=True)
