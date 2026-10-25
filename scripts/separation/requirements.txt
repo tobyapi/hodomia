@@ -1,8 +1,7 @@
 # Comparison-only environment under <runtime>/separation-compare. Never install into the analysis runtime.
-# Versions shared with analysis/requirements.lock.txt keep the htdemucs_ft baseline identical to the app.
+# Versions shared with analysis/requirements.lock.txt keep the comparison close to the app's environment.
 torch==2.8.0
 torchaudio==2.8.0
-demucs==4.0.1
 av==16.0.1
 numpy==2.2.6
 soundfile==0.13.1

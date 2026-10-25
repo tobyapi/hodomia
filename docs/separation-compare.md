@@ -2,13 +2,15 @@
 
 [開発環境と検証へ戻る](development.md)
 
-解析で使っている htdemucs_ft と、RoFormer系やSCNetの分離モデルを手元の曲で比べる開発用ツールです。アプリの解析には組み込んでいません。比較用のPython環境は解析環境と分け、`<runtime>/separation-compare/` に作ります。
+アプリの分離（ボーカルはKim版Mel-Band RoFormer、ドラムとベースはZFTurbo版4分離BS-RoFormer ep_17）と、ほかのRoFormer系やSCNetの分離モデルを手元の曲で比べる開発用ツールです。比較用のPython環境は解析環境と分け、`<runtime>/separation-compare/` に作ります。
+
+アプリは2026年10月まで htdemucs_ft を使っていました。重みが研究目的に限られている（[demucs#327](https://github.com/facebookresearch/demucs/issues/327)）ため置き換え、このツールからも外しました。置き換えを決めたときの比較は[検証記録](verification.md#分離モデルの置き換え)にあります。
 
 分離結果を比べる `compare.py` と、その出力から曲構成と歌詞を推定し直して基準と比べる `downstream.py` の2段に分かれています。
 
 ## 準備
 
-基準の htdemucs_ft は解析環境のモデルをそのまま使うので、先に `npm run setup:analysis` を済ませておきます。続けて次を実行します。ネット接続が必要なのはこの手順だけです。
+基準のアプリの分離は解析環境のモデルとPythonをそのまま使うので、先に `npm run setup:analysis` を済ませておきます。続けて次を実行します。ネット接続が必要なのはこの手順だけです。
 
 ```powershell
 uv run --no-project --python 3.11 scripts/separation/prepare.py
@@ -37,13 +39,13 @@ Macでは `venv/bin/python` を使います。比較中はPythonのネット接�
 
 出力先には、比べた区間の `mix.wav`、モデルごとのフォルダーにある `vocals.wav` と `instrumental.wav`、結果表の `report.md` と `report.json` が入ります。伴奏はどのモデルでもミックスからボーカルを引いて作ります。
 
-4分離できるモデル（htdemucs_ft、ZFTurbo版BS-RoFormer、SCNet XL IHF、MVSep 53分離）は、解析と同じ名前のbass・drums・other・vocalsを `stems/` に保存します。MVSep 53分離にはotherがないので、ミックスからほかの3つを引いた残りをotherにします。
+アプリの分離と4分離できるモデル（ZFTurbo版BS-RoFormer、SCNet XL IHF、MVSep 53分離）は、解析と同じ名前のbass・drums・other・vocalsを `stems/` に保存します。MVSep 53分離にはotherがないので、ミックスからほかの3つを引いた残りをotherにします。
 
-ボーカル専用のKim版Mel-Band RoFormerと4分離モデルを両方選ぶと、組み合わせの行も作ります。ボーカルはKim版、ドラムとベースは4分離モデルのものを使い、otherはミックスから3つを引いた残りです。処理秒は2つのモデルの合計、GPUメモリは大きいほうを載せます。
+ボーカル専用のKim版Mel-Band RoFormerとSCNet XL IHFを両方選ぶと、組み合わせの行（kim_scnet）も作ります。ボーカルはKim版、ドラムとベースはSCNet XL IHFのものを使い、otherはミックスから3つを引いた残りです。Kim版とZFTurbo版4分離の組み合わせはアプリの分離と同じなので、行を作りません。処理秒は2つのモデルの合計、GPUメモリは大きいほうを載せます。
 
 ## 曲構成と歌詞への影響
 
-`compare.py` の出力フォルダーを渡すと、各モデルのステムでAll-In-Oneの曲構成推定とWhisperの書き起こしをやり直し、htdemucs_ftの結果と比べます。All-In-OneとWhisperは解析環境にあるので、解析環境のPythonで実行します。
+`compare.py` の出力フォルダーを渡すと、各モデルのステムでAll-In-Oneの曲構成推定とWhisperの書き起こしをやり直し、アプリの分離の結果と比べます。All-In-OneとWhisperは解析環境にあるので、解析環境のPythonで実行します。
 
 ```powershell
 .runtime/venv/Scripts/python.exe scripts/separation/downstream.py "test-results/separation/<曲名>-<日時>"
@@ -64,7 +66,7 @@ Macでは `venv/bin/python` を使います。比較中はPythonのネット接�
 | 発話なし警告 | Whisperの発話なしの確率が0.6を超えた行の数 |
 | 活動IoU | 分離音声の相対音量から判定した、ステムが鳴っている時間の重なり |
 
-どの値も基準とのずれで、正しさは示しません。基準そのものも毎回同じではありません。htdemucs_ftは shifts=2 で入力をランダムにずらすので、同じ曲でもステムが少し変わります。Whisperは確信度が低い区間を温度を上げて再試行するので、同じボーカルでも書き起こしが変わることがあります。差の大きさは、基準を2回実行したときのずれと比べて読んでください。歌詞CERが大きいときは、どちらの書き起こしが歌詞に近いかを `transcript.json` で読み比べてください。
+どの値も基準とのずれで、正しさは示しません。Whisperは確信度が低い区間を温度を上げて再試行するので、同じボーカルでも書き起こしが変わることがあります。差の大きさは、基準を2回実行したときのずれと比べて読んでください。歌詞CERが大きいときは、どちらの書き起こしが歌詞に近いかを `transcript.json` で読み比べてください。
 
 ## 結果の見方
 
@@ -82,7 +84,7 @@ SDRはMVSEPやMSSTと同じ式で計算します。参照には、ミックス�
 
 | 対象 | 配布元 | 確認できた内容 |
 | --- | --- | --- |
-| htdemucs_ft（基準） | facebookresearch/demucs | コードはMIT。重みは研究目的でのみ提供していると作者が回答（[demucs#327](https://github.com/facebookresearch/demucs/issues/327)） |
+| htdemucs_ft（2026年10月までの解析） | facebookresearch/demucs | コードはMIT。重みは研究目的でのみ提供していると作者が回答（[demucs#327](https://github.com/facebookresearch/demucs/issues/327)） |
 | MSSTのコード | ZFTurbo/Music-Source-Separation-Training | MIT |
 | BS-RoFormer ZFTurbo 4分離 ep_17 | MSSTのリリース v1.0.12 | 作者がMITで公開したと回答（[MSST#254](https://github.com/ZFTurbo/Music-Source-Separation-Training/issues/254)）。学習データはMUSDB18HQだけ |
 | SCNet XL IHF ep_36 | MSSTのリリース v1.0.15 | 作者が自作の重みはMITと回答（[MSST#245](https://github.com/ZFTurbo/Music-Source-Separation-Training/issues/245)）。このファイルを名指しした確認依頼（10月12日）には回答がない。学習データはMUSDB18だけ |

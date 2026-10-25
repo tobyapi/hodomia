@@ -56,7 +56,7 @@ class ProjectTests(ProjectFixture):
         save_edits(self.project, {'revision': 0, 'tracks': {'chords': [row('manual', 0, 0, 1, 'G')]}})
         edits = snapshot(self.project)['edits']
         engines = SimpleNamespace(configure=lambda _: (self.root, 'cpu'), release=lambda: None,
-                                  separate=None, beats=None, sections=None)
+                                  beats=None, sections=None)
         chords = [row('chord', 0, 0, 1, 'A:min7')]
         keys = [row('key', 0, 0, 1, 'A minor')]
         with patch.dict(sys.modules, {'engines': engines}), patch('socket.create_connection'), patch('socket.socket.connect'), \
@@ -93,9 +93,10 @@ class ProjectTests(ProjectFixture):
         def unexpected(*args):
             self.fail('声の表現のみの実行で他の解析を呼んではいけません')
         engines = SimpleNamespace(configure=lambda _: (self.root, 'cpu'), release=lambda: None,
-                                  separate=unexpected, beats=unexpected, sections=unexpected)
+                                  beats=unexpected, sections=unexpected)
         event = row('v', 0, 0, .5, 'ブレス', category='breath')
-        with patch.dict(sys.modules, {'engines': engines}), patch('socket.create_connection'), patch('socket.socket.connect'), \
+        with patch.dict(sys.modules, {'engines': engines}), patch('separation.separate', unexpected), \
+             patch('socket.create_connection'), patch('socket.socket.connect'), \
              patch('vocal_events.detect', return_value=([event], {'model': 'test'})):
             run(self.project, self.root, {'mode': 'instrumental', 'scope': 'vocal-events'})
         value = snapshot(self.project)

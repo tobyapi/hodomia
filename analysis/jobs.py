@@ -80,6 +80,9 @@ class Jobs:
             raise ControlError('MODEL_NOT_READY', '解析環境をセットアップしてください。')
         if options.get('scope') != 'vocal-events' and not options.get('region') and not (self.runtime / 'chordmini/installation.json').is_file():
             raise ControlError('MODEL_NOT_READY', 'BTCモデルをセットアップしてください。')
+        # Only a full analysis separates; the other scopes reuse the stems of the previous run.
+        if options.get('scope') is None and not options.get('region') and not (self.runtime / 'separation/installation.json').is_file():
+            raise ControlError('MODEL_NOT_READY', '分離モデルが未準備か更新されています。解析環境のセットアップを実行してください。')
         with file_lock(self.home / 'coordinator.lock'):
             if self.latest()['running']:
                 raise BusyError()

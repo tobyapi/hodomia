@@ -1,5 +1,7 @@
 # 決定
 
+- 2026-10-25（置き換え）: ユーザー了承により、分離をhtdemucs_ftからKim版Mel-Band RoFormer（ボーカル）とZFTurbo版BS-RoFormer ep_17（ドラムとベース）に替える。otherはミックスから3ステムを引いた残り。htdemucs_ftの重みは作者が研究目的のみと回答しており（demucs#327）、MIT公開のhodomiaで商用利用者に使わせられないため。Kim版はモデルカードのMIT、ep_17はファイルを特定した質問への作者のMIT回答（MSST#254）を根拠にする。学習データ（ep_17はMUSDB18HQ、Kim版は非公開）の商用利用可否は保証されない。MSSTのコードは固定コミットのチェックアウトを解析環境の別プロセスで動かし、重みはSHA-256で固定、strict読み込み、推論中は通信禁止。バッチ数は8 GBのGPUで共有メモリにあふれないよう1。All-In-Oneは継続するが、手元7曲中4曲で区間名か境界が変わった（htdemucs_ftの再実行では変化なし）。2026-09-21の撤去の決定のうち、分離をhtdemucs_ftとする部分を上書きする。過去のrunと手修正は保持し、構成名が変わるため全体の再解析で分離し直す。既存環境はready.jsonのseparationが変わるのでセットアップをやり直す。
+
 - 2026-09-21（撤去）: ユーザー指定でMel-Band・YAMNetの推論、比較UI/API、セットアップと専用環境を削除。分離はDemucs htdemucs_ft、声の分類は既存ASTを使用する。以下の比較導入の決定を上書きする。元音源、通常解析、手修正と過去runは保持し、過去run内の比較メタデータは画面から利用しない。Windows保存競合修正は維持する。
 
 - 2026-09-21: ユーザー選択によりKimberley Jensen Mel-Bandのみ追加。独立venvから原曲を分離し、比較用のボーカル・伴奏を別保存。scope=separation-comparisonは通常トラック・手修正を保持し、AST/YAMNet×原曲/Demucs/Mel-Bandを比較する。既定の分離・ASR入力は変更しない。固定ハッシュ・通信禁止・モデル直接指定でオフライン動作を確認。Windows進捗保存で実測した共有違反には上限付き再試行を入れる。
@@ -15,7 +17,7 @@
 - ハーネスは Vitest + Testing Library + Tauri mockIPC、Rust テスト、統合 check、Windows CI、環境診断で構成。
 - 2026-09-21: ローカルPython3.11ワーカーを追加。モデルはGPU上で順次読み込み、初回準備後はネット接続を禁止する。
 - 日本語はlarge-v3の日本語固定・beam10と分離ボーカルのWhisperX alignment。多言語は言語自動判定・beam5。日本語/英語以外はASR時刻候補を明示する。
-- 分離はhtdemucs_ft、拍はBeat This、構成はAll-In-One。コードはCQTの長短三和音候補と遷移抑制、主旋律はpYIN。複音・ラップ・ビートボックスは精度保証しない。
+- 分離はKim版Mel-Band RoFormerとBS-RoFormer ep_17（2026-10-25まではhtdemucs_ft）、拍はBeat This、構成はAll-In-One。コードはCQTの長短三和音候補と遷移抑制、主旋律はpYIN。複音・ラップ・ビートボックスは精度保証しない。
 - 手修正はトラック単位の上書き＋保存リビジョン。過去の解析runsを保持し、同一音源・同一分離モデルのステムを再利用する。
 - Windows の Rust テストにも Common Controls v6 マニフェストをリンクする。指定なしでは TaskDialogIndirect のロードが失敗したため、build.rs でアプリとテストに適用。
 - 2026-09-21: 曲取り込みは音源選択1回のみ。保存先はOSのドキュメント/hodomia/Projects。終了ハンドラーは保存後にdestroyを呼び、mainウィンドウだけにallow-destroyを付与する。TauriのonCloseRequestedは通常終了時にも内部でdestroyを使用するため、この権限を省かない。

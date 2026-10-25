@@ -49,14 +49,14 @@ def main(argv=None):
     home = installation.home(args.runtime)
     installation.verify_checkout(home / 'msst')
     sys.path.insert(0, str(home / 'msst'))
-    models, device = configure(args.runtime)
+    _, device = configure(args.runtime)
     if device == 'cuda':
         # Initialize the CUDA context here so the first model's time does not include it.
         torch.zeros(1, device=device)
     folder = output_folder(args)
     folder.mkdir(parents=True, exist_ok=True)
     mix_path, mix, reference = inputs.prepare(args.song, folder, args.start, args.duration, args.reference_vocals)
-    session = Session(folder, home, models, device, mix_path, mix, reference, args.batch_size)
+    session = Session(folder, home, args.runtime, device, mix_path, mix, reference, args.batch_size)
     rows = [evaluate(candidate, session) for candidate in selected(args.models, home)]
     rows += [row for row in (combined(combination, rows, session) for combination in COMBINATIONS) if row]
     report.write(folder, dict(input=str(args.song), excerpt=dict(start=args.start, seconds=len(mix) / inputs.RATE),

@@ -113,6 +113,15 @@ class ControlTests(unittest.TestCase):
             if not ok:
                 self.assertEqual(response['error']['code'], 'UNKNOWN_OPERATION')
 
+    def test_full_analysis_waits_for_the_separation_setup(self):
+        write_json(self.runtime / 'ready.json', {})
+        (self.runtime / 'chordmini').mkdir()
+        write_json(self.runtime / 'chordmini/installation.json', {})
+        with self.assertRaises(ControlError) as raised:
+            self.service.dispatch('start_analysis', {'root': str(self.root), 'options': {'mode': 'japanese'}})
+        self.assertEqual(raised.exception.code, 'MODEL_NOT_READY')
+        self.assertIn('分離モデル', str(raised.exception))
+
     def test_detached_job_reaches_failed_state_without_loading_models(self):
         write_json(self.runtime / 'ready.json', {})
         (self.runtime / 'chordmini').mkdir()

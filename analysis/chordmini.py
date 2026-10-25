@@ -2,9 +2,9 @@
 import hashlib
 import math
 import os
-import subprocess
 import time
 from pathlib import Path
+from model_process import run_logged
 from storage import read_json, row, write_json
 
 COMMIT = 'aa6e3a8d7b017f082fd2aaff9329d5c26af49c03'
@@ -59,22 +59,8 @@ def infer(audio, runtime, output, duration, check_cancel=lambda: None):
     command = [str(python), str(Path(__file__).with_name('chordmini_runner.py')), '--repo', str(repo.resolve()),
                '--audio', str(Path(audio).resolve()), '--output', str(output.resolve())]
     started = time.monotonic()
-    with (output / 'inference.log').open('w', encoding='utf-8') as log:
-        with subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT,
-                              env={**os.environ, 'PYTHONUTF8': '1'},
-                              creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0) as process:
-            try:
-                while process.poll() is None:
-                    check_cancel()
-                    if time.monotonic() - started > 1800:
-                        raise TimeoutError('ChordMiniの解析が30分を超えました。')
-                    time.sleep(.2)
-            except BaseException:
-                process.kill()
-                process.wait()
-                raise
-            if process.returncode:
-                raise RuntimeError('ChordMiniの推論に失敗しました。解析フォルダーのchordmini/inference.logを確認してください。')
+    if run_logged(command, output / 'inference.log', check_cancel, 1800, 'ChordMiniの解析が30分を超えました。'):
+        raise RuntimeError('ChordMiniの推論に失敗しました。解析フォルダーのchordmini/inference.logを確認してください。')
     rows = read_lab(output / 'chords.lab', duration)
     metadata = read_json(output / 'inference.json')
     metadata.update(backend='chordmini-btc', source='original', repository='https://github.com/ptnghia-j/ChordMini',
