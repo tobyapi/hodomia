@@ -31,7 +31,7 @@ jobs:
       - run: sh -n scripts/setup-macos.sh
       - run: uv venv test-results/macos-venv --python 3.11
       - run: uv pip install --no-cache --python test-results/macos-venv/bin/python -r analysis/requirements.macos-arm64.lock.txt
-      - run: test-results/macos-venv/bin/python -c "import torch, torchaudio, whisperx, beat_this, allin1_infer, demucs; print(torch.__version__)"
+      - run: test-results/macos-venv/bin/python -c "import torch, torchaudio, whisperx, beat_this, allin1_infer, beartype, ml_collections; print(torch.__version__)"
       - run: PYTHONUTF8=1 test-results/macos-venv/bin/python -m unittest discover -s analysis/tests -v
 
   chordmini-setup:

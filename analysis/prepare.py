@@ -20,8 +20,9 @@ def prepare(runtime):
     from huggingface_hub import snapshot_download
     import nltk
     import torch
-    from demucs.pretrained import get_model
     from beat_this.inference import File2Beats
+    from separation import SETUP_ID
+    from separation_install import install as install_separation
 
     models = runtime / 'models'
     models.mkdir(parents=True, exist_ok=True)
@@ -35,10 +36,11 @@ def prepare(runtime):
         print(f'Download: {name}', flush=True)
         snapshot_download(repo, local_dir=str(models / name),
                           allow_patterns=['*.json', 'model.bin', 'vocabulary.*', '*.safetensors', 'pytorch_model.bin'])
-    print('Download: htdemucs_ft', flush=True)
-    get_model('htdemucs_ft')
+    install_separation(runtime)
     print('Download: Beat This', flush=True)
     checkpoint = models / 'torch' / 'checkpoints' / 'beat_this-final0.ckpt'
+    # curl does not create missing folders.
+    checkpoint.parent.mkdir(parents=True, exist_ok=True)
     if not checkpoint.exists():
         subprocess.run(['curl', '--fail', '--location', '--retry', '3', '--output', str(checkpoint),
                         'https://cloud.cp.jku.at/public.php/dav/files/7ik4RrBKTS273gp/final0.ckpt'], check=True)
@@ -53,7 +55,7 @@ def prepare(runtime):
     if not nltk.download('punkt_tab', download_dir=str(models / 'nltk'), quiet=True):
         raise RuntimeError('NLTK tokenizer download failed')
     manifest = {'schemaVersion': 1, 'asr': 'large-v3', 'alignment': ['ja', 'en'],
-                'separation': 'htdemucs_ft', 'beats': 'final0', 'structure': 'harmonix-all',
+                'separation': SETUP_ID, 'beats': 'final0', 'structure': 'harmonix-all',
                 'vocalEvents': MODEL_REVISION, 'cudaAvailable': torch.cuda.is_available(), 'torch': torch.__version__}
     (runtime / 'ready.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
     print(json.dumps(manifest), flush=True)

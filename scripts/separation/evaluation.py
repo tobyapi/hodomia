@@ -14,7 +14,7 @@ from candidates import BASELINE
 class Session:
     folder: Path
     home: Path
-    models: Path
+    runtime: Path
     device: str
     mix_path: Path
     mix: object
@@ -24,7 +24,8 @@ class Session:
 
 def separation(candidate, session, target):
     if candidate is BASELINE:
-        return lambda: separators.demucs_stems(session.mix_path, target / 'stems', session.models, session.device)
+        return lambda: separators.app_stems(session.mix_path, target / 'stems', session.runtime, session.device,
+                                            installation.python_path(session.runtime))
     installation.verify_downloads(session.home, candidate)
     config = installation.config_path(session.home, candidate)
     weights = installation.download_path(session.home, candidate.weights)

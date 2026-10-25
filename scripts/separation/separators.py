@@ -18,11 +18,11 @@ def measure(device, action):
     return stems, elapsed, torch.cuda.max_memory_allocated() / 2 ** 20, torch.cuda.max_memory_reserved() / 2 ** 20
 
 
-def demucs_stems(mix_path, folder, models, device):
-    """The app's own separation call, so the baseline matches analysis exactly."""
+def app_stems(mix_path, folder, runtime, device, python):
+    """The app's own separation, run by the analysis Python, so the baseline matches analysis exactly."""
     import soundfile as sf
-    from engines import separate
-    paths = separate(mix_path, folder, models, device)
+    from separation import separate
+    paths = separate(mix_path, folder, runtime, device, python=python)
     return {name: sf.read(str(path), dtype='float32', always_2d=True)[0] for name, path in paths.items()}
 
 

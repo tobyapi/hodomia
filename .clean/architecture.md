@@ -27,12 +27,12 @@ MCPはautomation/mcp-server.mjs → worker-client.mjs → headless.py。公式SD
 - `App.tsx`: 状態と画面の接続。`workspace/`: 状態・操作・ポーリング。`views/`: 画面領域の組み立て。`components/`: 時間軸と項目編集。`editing.ts` / `useEdits.ts`: 修正データとUndo/Redo。
 - `workspace.rs`: 共有状態と終了時の解放。`workspace/`: パス許可、IPC操作、ワーカー、ジョブ状態を責務別に管理。MLライブラリをRust/UIへ直接持ち込まない。
 - `analysis/storage.py`: プロジェクト作成・読み込み・修正保存の窓口。`json_store.py`: 原子的保存。`track_schema.py`: 検証。`project_export.py`: 書き出し。MLを読み込まず操作可能。
-- `pipeline.py`: 段階実行。`checkpoints.py`: 進捗保存・取消・部分失敗・段階別の所要時間。`lyrics_stage.py` / `vocal_stage.py` / `harmony_stage.py`: 各段階の結果更新。harmony_stageのBTCは原曲だけを読むため、分離の前に別スレッドで起動してコード段階で結果を受け取る。中止や失敗で受け取らずに終わる場合は推論プロセスを止めてから戻る。`engines.py`: 学習済みモデル。`dsp.py`: 信号処理。`lyrics.py`: ASR・既知歌詞照合・時刻合わせ。Whisperの発話なしの確率を保存し、高い行に注意文を付ける。
+- `pipeline.py`: 段階実行。`checkpoints.py`: 進捗保存・取消・部分失敗・段階別の所要時間。`lyrics_stage.py` / `vocal_stage.py` / `harmony_stage.py`: 各段階の結果更新。harmony_stageのBTCは原曲だけを読むため、分離の前に別スレッドで起動してコード段階で結果を受け取る。中止や失敗で受け取らずに終わる場合は推論プロセスを止めてから戻る。`engines.py`: 学習済みモデル。`separation.py`: 分離のプロセス境界。固定コミットのMSSTと固定重みの照合、出力ステムの長さの検証、来歴の保存を担当し、`separation_runner.py`が解析環境の別プロセスでKim版Mel-Band RoFormerとBS-RoFormer ep_17を順に動かしてotherを残りから作る。`separation_install.py`はセットアップ時の取得と試験分離だけを担当する。`model_process.py`はChordMiniと分離の子プロセスをログ付きで動かし、中止と時間切れで止める。`dsp.py`: 信号処理。`lyrics.py`: ASR・既知歌詞照合・時刻合わせ。Whisperの発話なしの確率を保存し、高い行に注意文を付ける。
 - `prepare.py`: オンラインモデル準備専用。解析とは別プロセス。
 - `setup_macos.py` / `scripts/setup-macos.sh`: Apple Silicon向けの初回セットアップ。Python環境・固定依存・モデルの取得だけを担当し、解析時には使わない。
 - `vocal_events.py`: 原曲と分離ボーカルの多ラベル音声分類。歌詞データに依存せず、候補範囲・根拠・未校正スコアを返す。`scope=vocal-events` の解析は既存の自動結果をコピーしてこのトラックだけ更新する。
 - `tests/ui/`: ブラウザー専用の注入ハーネス。本番のViteエントリには含めない。
-- `scripts/separation/`: 分離モデルの比較専用。`compare.py`は`<runtime>/separation-compare/` の別venvと固定コミットのMSSTで動き、基準にはanalysisの`engines.separate`と`media.decode`を呼ぶ。`downstream.py`は解析環境で動き、比較で得たステムをanalysisの`engines.sections`・`lyrics.transcribe`・`dsp.stem_activity`に渡して基準と比べる。analysisからは参照しない。`prepare.py`だけがネット接続し、ほかは通信を禁止する。
+- `scripts/separation/`: 分離モデルの比較専用。`compare.py`は`<runtime>/separation-compare/` の別venvと固定コミットのMSSTで動き、基準にはanalysisの`separation.separate`（解析環境のPythonで実行）と`media.decode`を呼ぶ。`downstream.py`は解析環境で動き、比較で得たステムをanalysisの`engines.sections`・`lyrics.transcribe`・`dsp.stem_activity`に渡して基準と比べる。analysisからは参照しない。`prepare.py`だけがネット接続し、ほかは通信を禁止する。
 
 原本・解析ごとのruns・手修正editsを分離し、再解析時に手修正を上書きしない。修正はトラック単位の上書きであり、区間再解析の結果を見るには「自動結果を比較」を使う。
 

@@ -52,5 +52,6 @@ mod runtime_paths;
 mod screenshot_request;
 mod screenshot_response;
 pub(crate) mod screenshots;
+mod separation_setup;
 mod window_capture;
 mod window_focus;

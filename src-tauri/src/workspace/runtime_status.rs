@@ -1,6 +1,7 @@
 use super::{
     analysis_support,
     runtime_paths::{python_in_venv, runtime_root},
+    separation_setup,
 };
 use serde_json::{json, Value};
 use std::{fs, path::Path};
@@ -9,6 +10,7 @@ fn analysis_ready(runtime: &Path, ready: Option<&Value>) -> bool {
     analysis_support::AVAILABLE
         && ready.is_some_and(|v| v["structure"] == "harmonix-all")
         && ready.is_some_and(|v| v["vocalEvents"].is_string())
+        && ready.is_some_and(|v| separation_setup::ready(runtime, v))
         && runtime
             .join("models/vocal-events/model.safetensors")
             .is_file()

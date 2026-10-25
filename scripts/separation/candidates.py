@@ -46,9 +46,11 @@ def released(tag, filename, sha256):
     return Download(MSST_RELEASES + tag + '/' + filename, filename, sha256)
 
 
+# The app's own separation (analysis/separation.py): Kim's vocals with the drums and bass of ep_17.
 BASELINE = Candidate(
-    'htdemucs_ft', 'Demucs htdemucs_ft（解析と同じ設定）', '研究目的のみ（作者回答）',
-    'https://github.com/facebookresearch/demucs/issues/327（リポジトリのコードはMIT）', stems=FOUR_STEMS)
+    'hodomia', 'hodomiaの分離（Kim版ボーカル＋ZFTurbo 4分離のドラム・ベース）', 'MIT（ep_17は作者表明）',
+    'https://huggingface.co/KimberleyJSN/melbandroformer / '
+    'https://github.com/ZFTurbo/Music-Source-Separation-Training/issues/254', stems=FOUR_STEMS)
 
 CANDIDATES = (
     BASELINE,
@@ -102,8 +104,6 @@ CANDIDATES = (
 
 COMBINATIONS = (
     Combination('kim_scnet', 'Kim版ボーカル＋SCNet XL IHFのドラム・ベース', 'mel_roformer_kim', 'scnet_xl_ihf'),
-    Combination('kim_bs_roformer', 'Kim版ボーカル＋ZFTurbo 4分離のドラム・ベース',
-                'mel_roformer_kim', 'bs_roformer_zfturbo_4stem'),
 )
 
 

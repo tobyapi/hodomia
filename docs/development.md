@@ -25,7 +25,7 @@ sh scripts/setup-macos.sh .runtime full
 npm run tauri:dev
 ```
 
-初回セットアップのみモデルをオンライン取得します。音源・歌詞は送信しません。パッケージとモデルのために数十GBの空き容量を用意してください。アプリ内の「初回セットアップ」「環境を再確認・修復」でも同じ処理を実行できます。解析中はPythonのネット接続を禁止し、キャッシュ不足は明示的な失敗になります。
+初回セットアップのみモデルをオンライン取得します。音源・歌詞は送信しません。パッケージとモデルのために数十GBの空き容量を用意してください。アプリ内の「初回セットアップ」「環境を再確認・修復」でも同じ処理を実行できます。解析中はPythonのネット接続を禁止し、キャッシュ不足は明示的な失敗になります。2026年10月25日に分離モデルをhtdemucs_ftから替えたので、それより前にセットアップした環境は解析環境が未準備と表示されます。「初回セットアップ」をもう一度実行してください（追加の取得は重み約1.4 GBとMSSTのソース）。
 
 開発時は `.runtime/`、この開発フォルダーがないインストール先ではアプリデータ内の `runtime/` を使います。`HODOMIA_RUNTIME` で保存先を指定できます。モデルはインストーラーに含めません。
 
@@ -56,6 +56,6 @@ pre-commitは複雑度・MIも検査し、pre-pushは `npm run analyze` で全�
 
 `analysis/requirements.txt` は主要依存、`analysis/requirements.lock.txt` はWindows向け、`analysis/requirements.macos-arm64.lock.txt` はApple Silicon向けの固定依存です。React→`src/api.ts`→Rust→`analysis/cli.py`の順に処理を呼び出します。詳細は [構成](../.clean/architecture.md) と [検証記録](verification.md)。
 
-解析エンジン: Demucs htdemucs_ft、Beat This final0、All-In-One harmonix-all、faster-whisper large-v3、WhisperX、librosa。各モデル・依存のライセンスは配布元に従います。
+解析エンジン: Mel-Band RoFormer Kimberley Jensen版とBS-RoFormer ZFTurbo ep_17（分離）、Beat This final0、All-In-One harmonix-all、faster-whisper large-v3、WhisperX、librosa。各モデル・依存のライセンスは配布元に従います。
 
-RoFormer系やSCNetの分離をhtdemucs_ftと手元の曲で比べる開発用ツールは [音源分離の比較](separation-compare.md) を参照してください。分離は解析環境とは別のPython環境で動き、アプリの解析には使いません。
+ほかの分離モデルをアプリの分離と手元の曲で比べる開発用ツールは [音源分離の比較](separation-compare.md) を参照してください。候補の分離は解析環境とは別のPython環境で動き、アプリの解析には使いません。

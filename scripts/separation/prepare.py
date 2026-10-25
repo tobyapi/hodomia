@@ -70,9 +70,8 @@ def download_weights(home, include_unlicensed):
 
 
 def warn_without_baseline(runtime):
-    torch_models = Path(runtime) / 'models' / 'torch'
-    if not any(torch_models.glob('**/checkpoints/*.th')):
-        print('注意: htdemucs_ftがありません。先に npm run setup:analysis を実行してください。', flush=True)
+    if not (Path(runtime) / 'separation' / 'installation.json').is_file():
+        print('注意: アプリの分離モデルがありません。先に npm run setup:analysis を実行してください。', flush=True)
 
 
 def main():

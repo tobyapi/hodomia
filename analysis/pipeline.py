@@ -32,7 +32,8 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
         with within(root, project['source']['path']).open('rb') as stream:
             if hashlib.file_digest(stream, 'sha256').hexdigest() != project['source']['sha256']:
                 raise ValueError('保存済みの元音源が変更されています。新しいプロジェクトとして読み込んでください。')
-        from engines import configure, separate, beats, sections
+        from engines import configure, beats, sections
+        from separation import ENGINE, separate
         from dsp import basics, pitch, stem_activity
         import numpy as np
         models, device = configure(runtime)
@@ -77,14 +78,17 @@ def run(root, runtime, options, cancel_path=None, on_run=None):
                 cached = previous or {}
                 candidates = {name: within(root, path) for name, path in cached.get('stems', {}).items()}
                 if (cached.get('sourceHash') == project['source']['sha256'] and
-                    cached.get('engines', {}).get('separation') == 'htdemucs_ft / shifts=2 / overlap=.5' and
+                    cached.get('engines', {}).get('separation') == ENGINE and
                     set(candidates) == {'vocals', 'drums', 'bass', 'other'} and all(p.is_file() for p in candidates.values())):
                     paths = candidates
                     result['engines']['separationCache'] = cached.get('runId')
                 else:
-                    paths = separate(audio, folder / 'stems', models, device)
+                    def stop_if_cancelled():
+                        if cancelled():
+                            raise Cancelled()
+                    paths = separate(audio, folder / 'stems', runtime, device, stop_if_cancelled)
                 result['stems'] = {name: str(path.relative_to(root)).replace('\\', '/') for name, path in paths.items()}
-                result['engines']['separation'] = 'htdemucs_ft / shifts=2 / overlap=.5'
+                result['engines']['separation'] = ENGINE
                 for name, path in paths.items():
                     result['series'][name] = stem_activity(path, name, duration)
             attempt('ボーカル・楽器の分離', .12, separation)

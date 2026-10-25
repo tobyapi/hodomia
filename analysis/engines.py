@@ -25,40 +25,6 @@ def release():
         torch.cuda.empty_cache()
 
 
-def separate(audio, out, models, device):
-    import torch
-    import soundfile as sf
-    from demucs.pretrained import get_model
-    from demucs.apply import apply_model
-    # Offline safety: never let torch's cache miss fall through to a download.
-    checkpoint = models / 'torch' / 'hub' / 'checkpoints'
-    if not checkpoint.exists():
-        checkpoint = models / 'torch' / 'checkpoints'
-    if not list(checkpoint.glob('*.th')):
-        raise RuntimeError('分離モデルが未準備です。初回セットアップを実行してください。')
-    model = get_model('htdemucs_ft')
-    samples, sr = sf.read(str(audio), dtype='float32', always_2d=True)
-    if sr != model.samplerate:
-        raise ValueError('分離モデルのサンプルレートが一致しません。')
-    wav = torch.from_numpy(samples.T.copy())
-    reference = wav.mean(0)
-    std = reference.std().clamp_min(1e-8)
-    normalized = (wav - reference.mean()) / std
-    # Only one bag member is moved to the GPU at a time by apply_model.
-    with torch.inference_mode():
-        stems = apply_model(model, normalized[None], device=device, shifts=2, split=True, overlap=.5, segment=6)[0]
-    stems = stems.cpu() * std + reference.mean()
-    out.mkdir(exist_ok=True)
-    paths = {}
-    for name, stem in zip(model.sources, stems):
-        path = out / (name + '.wav')
-        sf.write(str(path), stem.T.numpy(), sr, subtype='FLOAT')
-        paths[name] = path
-    del model, wav, stems
-    release()
-    return paths
-
-
 def beats(audio, models, device):
     from beat_this.inference import File2Beats
     checkpoint = models / 'torch' / 'hub' / 'checkpoints' / 'beat_this-final0.ckpt'
