@@ -5,6 +5,10 @@ import unicodedata
 from storage import row, write_json
 from engines import release
 
+# Whisper's own non-speech threshold. Text it still writes there is often invented,
+# e.g. a closing greeting over wordless vocals (no_speech .88 vs at most .52 for sung lines).
+NO_SPEECH_WARNING = .6
+
 
 def comparable(text):
     return ''.join(c for c in unicodedata.normalize('NFKC', text).lower() if c.isalnum())
@@ -41,6 +45,23 @@ def match_lines(text, segments, duration):
     return windows
 
 
+def transcript_rows(segments):
+    return [{'text': s.text.strip(), 'start': s.start, 'end': s.end, 'noSpeechProb': round(s.no_speech_prob, 4),
+             'avgLogprob': round(s.avg_logprob, 4), 'words': [asdict(w) for w in (s.words or [])]} for s in segments]
+
+
+def line_warning(window, found, aligned):
+    if not found:
+        warning = '時刻は未確定。歌詞または探索区間を修正して再解析してください。'
+    else:
+        warning = '自動推定・要確認' if aligned else 'この言語はASR時刻の候補です。専用アラインメントは未対応。'
+    # Invented text often fails alignment too, so unaligned lines need this hint most.
+    no_speech = window.get('noSpeechProb', 0)
+    if no_speech > NO_SPEECH_WARNING:
+        warning += f' 発話のない音から作られた文字の可能性があります（発話なしの確率{no_speech:.2f}）。試聴して、歌詞でなければ削除してください。'
+    return warning
+
+
 def transcribe(path, models, device, mode, supplied, duration, run, region=None):
     import librosa
     import nltk
@@ -65,8 +86,7 @@ def transcribe(path, models, device, mode, supplied, duration, run, region=None)
     segments, info = model.transcribe(audio, language=language, beam_size=10 if mode == 'japanese' else 5,
                                      vad_filter=False, condition_on_previous_text=False,
                                      word_timestamps=True, no_repeat_ngram_size=4)
-    raw = [{'text': s.text.strip(), 'start': s.start, 'end': s.end,
-            'words': [asdict(w) for w in (s.words or [])]} for s in segments]
+    raw = transcript_rows(segments)
     language = language or info.language
     write_json(run / 'transcript.json', {'segments': raw, 'language': language, 'offset': offset})
     del model
@@ -93,12 +113,8 @@ def transcribe(path, models, device, mode, supplied, duration, run, region=None)
                      if 0 <= w['start'] < w['end'] <= local_duration]
         start = min(w['start'] for w in found) + offset if found else None
         end = max(w['end'] for w in found) + offset if found else None
-        warning = '自動推定・要確認'
-        if not found:
-            warning = '時刻は未確定。歌詞または探索区間を修正して再解析してください。'
-        elif aligner is None:
-            warning = 'この言語はASR時刻の候補です。専用アラインメントは未対応。'
-        line = row('lyric', i, start, end, window['text'], language=language, warning=warning)
+        line = row('lyric', i, start, end, window['text'], language=language,
+                   warning=line_warning(window, found, aligner is not None))
         lines.append(line)
         for word in found:
             words.append(row('word', len(words), float(word['start']) + offset, float(word['end']) + offset,

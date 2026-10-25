@@ -27,7 +27,7 @@ MCPはautomation/mcp-server.mjs → worker-client.mjs → headless.py。公式SD
 - `App.tsx`: 状態と画面の接続。`workspace/`: 状態・操作・ポーリング。`views/`: 画面領域の組み立て。`components/`: 時間軸と項目編集。`editing.ts` / `useEdits.ts`: 修正データとUndo/Redo。
 - `workspace.rs`: 共有状態と終了時の解放。`workspace/`: パス許可、IPC操作、ワーカー、ジョブ状態を責務別に管理。MLライブラリをRust/UIへ直接持ち込まない。
 - `analysis/storage.py`: プロジェクト作成・読み込み・修正保存の窓口。`json_store.py`: 原子的保存。`track_schema.py`: 検証。`project_export.py`: 書き出し。MLを読み込まず操作可能。
-- `pipeline.py`: 段階実行。`checkpoints.py`: 進捗保存・取消・部分失敗・段階別の所要時間。`lyrics_stage.py` / `vocal_stage.py` / `harmony_stage.py`: 各段階の結果更新。harmony_stageのBTCは原曲だけを読むため、分離の前に別スレッドで起動してコード段階で結果を受け取る。中止や失敗で受け取らずに終わる場合は推論プロセスを止めてから戻る。`engines.py`: 学習済みモデル。`dsp.py`: 信号処理。`lyrics.py`: ASR・既知歌詞照合・時刻合わせ。
+- `pipeline.py`: 段階実行。`checkpoints.py`: 進捗保存・取消・部分失敗・段階別の所要時間。`lyrics_stage.py` / `vocal_stage.py` / `harmony_stage.py`: 各段階の結果更新。harmony_stageのBTCは原曲だけを読むため、分離の前に別スレッドで起動してコード段階で結果を受け取る。中止や失敗で受け取らずに終わる場合は推論プロセスを止めてから戻る。`engines.py`: 学習済みモデル。`dsp.py`: 信号処理。`lyrics.py`: ASR・既知歌詞照合・時刻合わせ。Whisperの発話なしの確率を保存し、高い行に注意文を付ける。
 - `prepare.py`: オンラインモデル準備専用。解析とは別プロセス。
 - `setup_macos.py` / `scripts/setup-macos.sh`: Apple Silicon向けの初回セットアップ。Python環境・固定依存・モデルの取得だけを担当し、解析時には使わない。
 - `vocal_events.py`: 原曲と分離ボーカルの多ラベル音声分類。歌詞データに依存せず、候補範囲・根拠・未校正スコアを返す。`scope=vocal-events` の解析は既存の自動結果をコピーしてこのトラックだけ更新する。
