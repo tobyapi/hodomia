@@ -32,6 +32,7 @@ MCPはautomation/mcp-server.mjs → worker-client.mjs → headless.py。公式SD
 - `setup_macos.py` / `scripts/setup-macos.sh`: Apple Silicon向けの初回セットアップ。Python環境・固定依存・モデルの取得だけを担当し、解析時には使わない。
 - `vocal_events.py`: 原曲と分離ボーカルの多ラベル音声分類。歌詞データに依存せず、候補範囲・根拠・未校正スコアを返す。`scope=vocal-events` の解析は既存の自動結果をコピーしてこのトラックだけ更新する。
 - `tests/ui/`: ブラウザー専用の注入ハーネス。本番のViteエントリには含めない。
+- `scripts/separation/`: ボーカル分離モデルの比較専用。`<runtime>/separation-compare/` の別venvと固定コミットのMSSTで動き、基準にはanalysisの`engines.separate`と`media.decode`を呼ぶ。analysisからは参照しない。`prepare.py`だけがネット接続し、`compare.py`は通信を禁止する。
 
 原本・解析ごとのruns・手修正editsを分離し、再解析時に手修正を上書きしない。修正はトラック単位の上書きであり、区間再解析の結果を見るには「自動結果を比較」を使う。
 
