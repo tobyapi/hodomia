@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from candidates import BASELINE, CANDIDATES, Download, by_id
+from candidates import BASELINE, CANDIDATES, COMBINATIONS, STEMS, Download, by_id
 from installation import config_path, downloads
 from prepare import fetch
 
@@ -43,7 +43,7 @@ class CandidateTests(unittest.TestCase):
                 self.assertRegex(download.sha256, re.compile('^[0-9a-f]{64}$'))
             if not isinstance(candidate.config, Download):
                 self.assertTrue(candidate.config.startswith('configs/'))
-            self.assertIn(candidate.model_type, ('bs_roformer', 'mel_band_roformer'))
+            self.assertIn(candidate.model_type, ('bs_roformer', 'mel_band_roformer', 'scnet'))
 
     def test_release_configs_are_read_from_the_download_folder(self):
         home = Path('runtime')
@@ -56,6 +56,18 @@ class CandidateTests(unittest.TestCase):
     def test_license_status_names_its_source(self):
         for candidate in CANDIDATES:
             self.assertTrue(candidate.license_source)
+
+    def test_outputs_map_to_the_stems_analysis_reads(self):
+        for candidate in CANDIDATES:
+            names = [stem for stem, _ in candidate.stems]
+            self.assertIn('vocals', names)
+            self.assertLessEqual(set(names), set(STEMS))
+            self.assertEqual(len(names), len(set(names)))
+
+    def test_combinations_take_drums_and_bass_from_a_multi_stem_model(self):
+        for combination in COMBINATIONS:
+            self.assertEqual([stem for stem, _ in by_id(combination.vocals).stems], ['vocals'])
+            self.assertLessEqual({'drums', 'bass'}, {stem for stem, _ in by_id(combination.rhythm).stems})
 
 
 if __name__ == '__main__':

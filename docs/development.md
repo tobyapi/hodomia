@@ -58,4 +58,4 @@ pre-commitは複雑度・MIも検査し、pre-pushは `npm run analyze` で全�
 
 解析エンジン: Demucs htdemucs_ft、Beat This final0、All-In-One harmonix-all、faster-whisper large-v3、WhisperX、librosa。各モデル・依存のライセンスは配布元に従います。
 
-BS-RoFormer系のボーカル分離をhtdemucs_ftと手元の曲で比べる開発用ツールは [ボーカル分離の比較](separation-compare.md) を参照してください。解析環境とは別のPython環境で動き、アプリの解析には使いません。
+RoFormer系やSCNetの分離をhtdemucs_ftと手元の曲で比べる開発用ツールは [音源分離の比較](separation-compare.md) を参照してください。分離は解析環境とは別のPython環境で動き、アプリの解析には使いません。
