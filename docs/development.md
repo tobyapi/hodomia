@@ -57,3 +57,5 @@ pre-commitは複雑度・MIも検査し、pre-pushは `npm run analyze` で全�
 `analysis/requirements.txt` は主要依存、`analysis/requirements.lock.txt` はWindows向け、`analysis/requirements.macos-arm64.lock.txt` はApple Silicon向けの固定依存です。React→`src/api.ts`→Rust→`analysis/cli.py`の順に処理を呼び出します。詳細は [構成](../.clean/architecture.md) と [検証記録](verification.md)。
 
 解析エンジン: Demucs htdemucs_ft、Beat This final0、All-In-One harmonix-all、faster-whisper large-v3、WhisperX、librosa。各モデル・依存のライセンスは配布元に従います。
+
+BS-RoFormer系のボーカル分離をhtdemucs_ftと手元の曲で比べる開発用ツールは [ボーカル分離の比較](separation-compare.md) を参照してください。解析環境とは別のPython環境で動き、アプリの解析には使いません。
