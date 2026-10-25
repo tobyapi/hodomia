@@ -39,9 +39,10 @@ class Session:
 def separation(candidate, session, target):
     if candidate is BASELINE:
         return lambda: separators.demucs_vocals(session.mix_path, target / 'stems', session.models, session.device)
-    installation.verify_weights(session.home, candidate)
-    weights = installation.weights_path(session.home, candidate)
-    return lambda: separators.roformer_vocals(candidate, session.home / 'msst', weights, session.mix,
+    installation.verify_downloads(session.home, candidate)
+    config = installation.config_path(session.home, candidate)
+    weights = installation.download_path(session.home, candidate.weights)
+    return lambda: separators.roformer_vocals(candidate, config, weights, session.mix,
                                               session.device, session.batch_size)
 
 
@@ -69,7 +70,7 @@ def evaluate(candidate, session):
 def selected(identifiers, home):
     if identifiers:
         return [by_id(identifier) for identifier in identifiers]
-    return [candidate for candidate in CANDIDATES if installation.has_weights(home, candidate)]
+    return [candidate for candidate in CANDIDATES if installation.has_downloads(home, candidate)]
 
 
 def output_folder(args):

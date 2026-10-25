@@ -4,7 +4,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from candidates import MSST_COMMIT
+from candidates import MSST_COMMIT, Download
 
 REPOSITORY = Path(__file__).resolve().parents[2]
 
@@ -21,8 +21,19 @@ def python_path(folder):
     return folder / 'venv' / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
 
 
-def weights_path(folder, candidate):
-    return folder / 'weights' / candidate.weights.filename
+def downloads(candidate):
+    files = [candidate.config, candidate.weights]
+    return [file for file in files if isinstance(file, Download)]
+
+
+def download_path(folder, download):
+    return folder / 'weights' / download.filename
+
+
+def config_path(folder, candidate):
+    if isinstance(candidate.config, Download):
+        return download_path(folder, candidate.config)
+    return folder / 'msst' / candidate.config
 
 
 def sha256(path):
@@ -33,16 +44,17 @@ def sha256(path):
     return digest.hexdigest()
 
 
-def has_weights(folder, candidate):
-    return candidate.weights is None or weights_path(folder, candidate).is_file()
+def has_downloads(folder, candidate):
+    return all(download_path(folder, download).is_file() for download in downloads(candidate))
 
 
-def verify_weights(folder, candidate):
-    path = weights_path(folder, candidate)
-    if not path.is_file():
-        raise FileNotFoundError(f'{candidate.id}: 重みがありません。scripts/separation/prepare.py を実行してください。')
-    if sha256(path) != candidate.weights.sha256:
-        raise ValueError(f'{candidate.id}: 重みのSHA-256が一致しません。prepare.py で取得し直してください。')
+def verify_downloads(folder, candidate):
+    for download in downloads(candidate):
+        path = download_path(folder, download)
+        if not path.is_file():
+            raise FileNotFoundError(f'{candidate.id}: {download.filename} がありません。scripts/separation/prepare.py を実行してください。')
+        if sha256(path) != download.sha256:
+            raise ValueError(f'{candidate.id}: {download.filename} のSHA-256が一致しません。prepare.py で取得し直してください。')
 
 
 def verify_checkout(repo):
