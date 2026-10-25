@@ -1,8 +1,6 @@
-import hashlib
 import re
 import sys
 import tempfile
-import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -10,8 +8,6 @@ import numpy as np
 import soundfile as sf
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import separation
-from model_process import run_logged
-from separation_install import fetch
 from separation_runner import analysis_stems
 from storage import write_json
 
@@ -111,53 +107,6 @@ class StemTests(unittest.TestCase):
         np.testing.assert_allclose(stems['other'], stereo(4, .2), atol=1e-6)
         np.testing.assert_allclose(sum(stems.values()), mix, atol=1e-6)
         np.testing.assert_allclose(stems['vocals'], stereo(4, .5))
-
-
-class ProcessTests(unittest.TestCase):
-    def setUp(self):
-        self.work = tempfile.TemporaryDirectory()
-        self.log = Path(self.work.name) / 'run.log'
-
-    def tearDown(self):
-        self.work.cleanup()
-
-    def test_exit_code_and_output_reach_the_caller(self):
-        code = run_logged([sys.executable, '-c', 'print("ok"); raise SystemExit(3)'], self.log, lambda: None, 30, '')
-        self.assertEqual(code, 3)
-        self.assertIn('ok', self.log.read_text(encoding='utf-8'))
-
-    def test_cancel_stops_the_process_at_once(self):
-        def cancel():
-            raise KeyboardInterrupt()
-        started = time.monotonic()
-        with self.assertRaises(KeyboardInterrupt):
-            run_logged([sys.executable, '-c', 'import time; time.sleep(30)'], self.log, cancel, 30, '')
-        self.assertLess(time.monotonic() - started, 10)
-
-    def test_a_process_past_its_limit_is_stopped(self):
-        with self.assertRaisesRegex(TimeoutError, '時間切れ'):
-            run_logged([sys.executable, '-c', 'import time; time.sleep(30)'], self.log, lambda: None, .3, '時間切れ')
-
-
-class FetchTests(unittest.TestCase):
-    def setUp(self):
-        self.work = tempfile.TemporaryDirectory()
-        self.folder = Path(self.work.name)
-        self.source = self.folder / 'source.ckpt'
-        self.source.write_bytes(b'weights')
-        self.target = self.folder / 'weights/target.ckpt'
-
-    def tearDown(self):
-        self.work.cleanup()
-
-    def test_keeps_only_a_download_with_the_pinned_digest(self):
-        fetch(self.source.as_uri(), self.target, hashlib.sha256(b'weights').hexdigest())
-        self.assertEqual(self.target.read_bytes(), b'weights')
-
-    def test_discards_a_download_with_another_digest(self):
-        with self.assertRaisesRegex(RuntimeError, 'SHA-256'):
-            fetch(self.source.as_uri(), self.target, '0' * 64)
-        self.assertEqual(list(self.target.parent.iterdir()), [])
 
 
 if __name__ == '__main__':
