@@ -65,7 +65,8 @@ def download_weights(home, include_unlicensed):
             print(f'取得しない: {candidate.id}（ライセンスの記載なし。--include-unlicensed で取得）', flush=True)
             continue
         print(f'取得: {candidate.id}（ライセンス: {candidate.license or "記載なし"}）', flush=True)
-        fetch(candidate.weights.url, installation.weights_path(home, candidate), candidate.weights.sha256)
+        for download in installation.downloads(candidate):
+            fetch(download.url, installation.download_path(home, download), download.sha256)
 
 
 def warn_without_baseline(runtime):

@@ -5,7 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from candidates import BASELINE, CANDIDATES
+from candidates import BASELINE, CANDIDATES, Download, by_id
+from installation import config_path, downloads
 from prepare import fetch
 
 
@@ -38,9 +39,19 @@ class CandidateTests(unittest.TestCase):
         for candidate in CANDIDATES:
             if candidate is BASELINE:
                 continue
-            self.assertRegex(candidate.weights.sha256, re.compile('^[0-9a-f]{64}$'))
-            self.assertTrue(candidate.config.startswith('configs/'))
+            for download in downloads(candidate):
+                self.assertRegex(download.sha256, re.compile('^[0-9a-f]{64}$'))
+            if not isinstance(candidate.config, Download):
+                self.assertTrue(candidate.config.startswith('configs/'))
             self.assertIn(candidate.model_type, ('bs_roformer', 'mel_band_roformer'))
+
+    def test_release_configs_are_read_from_the_download_folder(self):
+        home = Path('runtime')
+        released = by_id('bs_roformer_zfturbo_4stem')
+        checkout = by_id('mel_roformer_kim')
+        self.assertEqual(config_path(home, released), home / 'weights' / released.config.filename)
+        self.assertEqual(config_path(home, checkout), home / 'msst' / checkout.config)
+        self.assertEqual(downloads(checkout), [checkout.weights])
 
     def test_license_status_names_its_source(self):
         for candidate in CANDIDATES:

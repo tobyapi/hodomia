@@ -23,14 +23,16 @@ def demucs_vocals(mix_path, folder, models, device):
     return vocals
 
 
-def roformer_vocals(candidate, repo, weights, mix, device, batch_size=None):
-    """Inference through the pinned MSST checkout, which must already be on sys.path."""
+def roformer_vocals(candidate, config_path, weights, mix, device, batch_size=None):
+    """Inference through the pinned MSST checkout, which must already be on sys.path.
+
+    Multi-stem models return every stem; only vocals are compared."""
     import numpy as np
     import torch
     from engines import release
     from utils.model_utils import demix
     from utils.settings import get_model_from_config
-    model, config = get_model_from_config(candidate.model_type, str(repo / candidate.config))
+    model, config = get_model_from_config(candidate.model_type, str(config_path))
     # weights_only refuses pickled code; strict loading refuses a checkpoint that does not fit the config.
     model.load_state_dict(torch.load(weights, map_location='cpu', weights_only=True), strict=True)
     if batch_size:

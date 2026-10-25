@@ -14,7 +14,7 @@ uv run --no-project --python 3.11 scripts/separation/prepare.py --include-unlice
 
 このコマンドはPython 3.11の別環境を作り、[MSST](https://github.com/ZFTurbo/Music-Source-Separation-Training) を固定コミットで取得し、候補モデルの重みをダウンロードします。重みはSHA-256で照合し、一致しないファイルは残しません。
 
-`--include-unlicensed` を付けない場合、ライセンスの記載がない重み（viperx版BS-RoFormer）は取得しません。付けた場合も、手元での評価に使う前提です。
+`--include-unlicensed` を付けない場合、ライセンスの記載がない重み（viperx版とZFTurbo版4分離のBS-RoFormer）は取得しません。付けた場合も、手元での評価に使う前提です。
 
 ## 比較
 
@@ -33,7 +33,7 @@ Macでは `venv/bin/python` を使います。比較中はPythonのネット接�
 | `--batch-size` | RoFormerの推論バッチ数。GPUメモリが足りないときに下げる |
 | `--out` | 出力先。既定は `test-results/separation/<曲名>-<日時>/` |
 
-出力先には、比べた区間の `mix.wav`、モデルごとのフォルダーにある `vocals.wav` と `instrumental.wav`、結果表の `report.md` と `report.json` が入ります。伴奏はどのモデルでもミックスからボーカルを引いて作ります。htdemucs_ft の4分離は `htdemucs_ft/stems/` に残ります。
+出力先には、比べた区間の `mix.wav`、モデルごとのフォルダーにある `vocals.wav` と `instrumental.wav`、結果表の `report.md` と `report.json` が入ります。伴奏はどのモデルでもミックスからボーカルを引いて作ります。htdemucs_ft の4分離は `htdemucs_ft/stems/` に残ります。ZFTurbo版の4分離BS-RoFormerはボーカル以外のステムを保存せず、ボーカルだけを比べます。
 
 ## 結果の見方
 
@@ -52,6 +52,7 @@ SDRはMVSEPやMSSTと同じ式で計算します。参照には、ミックス�
 | htdemucs_ft（基準） | facebookresearch/demucs | MIT |
 | MSSTのコード | ZFTurbo/Music-Source-Separation-Training | MIT |
 | BS-RoFormer viperx ep_317（比較対象） | TRvlvr/model_repo のリリース | LICENSEファイルがなく、リリースにも記載がない |
+| BS-RoFormer ZFTurbo 4分離 ep_17（比較対象） | MSSTのリリース v1.0.12 | リポジトリはMITだが、重みについての個別の記載はない。学習データはMUSDB18HQだけで、MUSDB18は研究用途を前提に配られている |
 | Mel-Band RoFormer Kimberley Jensen（比較対象） | Hugging Face KimberleyJSN/melbandroformer | モデルカードに license: mit。GitHub側のリポジトリにはLICENSEファイルがない |
 | BS-RoFormer viperx ep_368、aufr33とviperxのカラオケ用Mel-Band | TRvlvr/model_repo のリリース | 記載なし |
 | becruily版Mel-Band、unwa版Kim改良、Gabox版 | Hugging Face | ライセンスのタグもREADMEもない |
